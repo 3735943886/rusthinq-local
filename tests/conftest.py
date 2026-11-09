@@ -22,13 +22,14 @@ def load(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def no_github(monkeypatch):
-    """Upstream rusthinq-scripts is checked in the background after setup; tests stay offline unless they stub it."""
+    """A start installs the pinned rusthinq-scripts unless it is there; tests stay offline unless they stub it (a
+    failed download keeps the drivers already there)."""
     from custom_components.rusthinq import scripts
 
-    async def offline(_http):
+    async def offline(_http, ref=None):
         raise scripts.ScriptsError("offline")
 
-    monkeypatch.setattr(scripts, "latest_commit", offline)
+    monkeypatch.setattr(scripts, "download", offline)
 
 
 class StubDaemon:

@@ -1,11 +1,12 @@
-"""Authenticated download of the embedded daemon's portable backup."""
+"""Download of the embedded daemon's portable backup, for administrators only: it holds `ca.key`, the device ledger
+and the LG account files."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 
 from aiohttp import web
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components.http import KEY_HASS_USER, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
 from .backup import create
@@ -19,6 +20,8 @@ class BackupView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request: web.Request, entry_id: str) -> web.Response:
+        if not request[KEY_HASS_USER].is_admin:
+            raise web.HTTPForbidden()
         hass: HomeAssistant = request.app["hass"]
         entry = hass.config_entries.async_get_entry(entry_id)
         if entry is None or entry.domain != DOMAIN:

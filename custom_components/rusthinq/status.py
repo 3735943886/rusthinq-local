@@ -25,7 +25,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import Entity
@@ -170,6 +170,11 @@ class BackupButton(ButtonEntity):
         self._attr_device_info = service_device(entry)
 
     async def async_press(self) -> None:
+        # The link is signed for whoever pressed (the frontend's websocket connection); the view checks admin as well.
+        user_id = self._context.user_id if self._context else None
+        user = await self.hass.auth.async_get_user(user_id) if user_id else None
+        if user is None or not user.is_admin:
+            raise Unauthorized(context=self._context)
         path = f"/api/rusthinq/backup/{self._entry.entry_id}"
         link = async_sign_path(self.hass, path, timedelta(hours=1))
         korean = self.hass.config.language.startswith("ko")

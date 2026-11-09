@@ -1,13 +1,16 @@
 """The LG account (options flow, account sensor) and each device's LG bridge controls."""
 
 import asyncio
+from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from conftest import AC, EMBEDDED
+from homeassistant.components.http.auth import async_sign_path
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.core import Context
+from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -99,7 +102,7 @@ async def test_reset_clears_state_and_reloads_the_entry(hass, air_conditioner):
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_backup_notification_uses_a_signed_download_link(hass, air_conditioner, hass_client_no_auth):
+async def backup_setup(hass):
     entry = await setup(hass)
     directory = Path(hass.config.path(DOMAIN))
     embedded.ensure_ca(directory)
@@ -109,12 +112,22 @@ async def test_backup_notification_uses_a_signed_download_link(hass, air_conditi
     )
     await hass.async_block_till_done()
     backup_button = er.async_get(hass).async_get_entity_id("button", DOMAIN, f"{entry.entry_id}-backup")
+    return entry, backup_button
+
+
+async def test_backup_notification_uses_a_signed_download_link(hass, air_conditioner, hass_ws_client,
+                                                                hass_client_no_auth):
+    entry, backup_button = await backup_setup(hass)
     assert backup_button is not None
     assert backup_button.endswith("download_backup")
     assert hass.states.get(backup_button).name.endswith("Download backup")
 
+    # As the frontend presses it: over the websocket, as the signed-in administrator.
+    ws = await hass_ws_client(hass)
     with patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify:
-        await hass.services.async_call("button", "press", {"entity_id": backup_button}, blocking=True)
+        await ws.send_json_auto_id({"type": "call_service", "domain": "button", "service": "press",
+                                    "target": {"entity_id": backup_button}})
+        assert (await ws.receive_json())["success"]
 
     message = notify.call_args.args[1]
     signed_path = message.split("(", 1)[1].split(")", 1)[0]
@@ -122,6 +135,30 @@ async def test_backup_notification_uses_a_signed_download_link(hass, air_conditi
     assert response.status == 200
     imported = migrate.read_export(await response.read())
     assert set(imported.files) == {"ca.key", "ca.cert", "devices-v2.json"}
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_only_administrators_get_the_backup(hass, air_conditioner, hass_read_only_user,
+                                                  hass_read_only_access_token, hass_client_no_auth):
+    entry, backup_button = await backup_setup(hass)
+    with (patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify,
+          pytest.raises(Unauthorized)):
+        await hass.services.async_call("button", "press", {"entity_id": backup_button}, blocking=True,
+                                       context=Context(user_id=hass_read_only_user.id))
+    notify.assert_not_called()
+    # An automation (no user) is refused too.
+    with (patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify,
+          pytest.raises(Unauthorized)):
+        await hass.services.async_call("button", "press", {"entity_id": backup_button}, blocking=True)
+    notify.assert_not_called()
+
+    path = f"/api/{DOMAIN}/backup/{entry.entry_id}"
+    client = await hass_client_no_auth()
+    response = await client.get(path, headers={"Authorization": f"Bearer {hass_read_only_access_token}"})
+    assert response.status == 403
+    token = hass.auth.async_validate_access_token(hass_read_only_access_token)
+    signed = async_sign_path(hass, path, timedelta(minutes=1), refresh_token_id=token.id)
+    assert (await client.get(signed)).status == 403
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 

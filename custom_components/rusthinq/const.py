@@ -22,8 +22,6 @@ DEFAULT_PORTS = {CONF_HTTPS_PORT: 443, CONF_MQTT_PORT: 8883, CONF_THINQ1_HTTPS_P
 """The appliance-facing listeners, at `config-0.2.sh`'s defaults. Appliances always open HTTPS on 443; another HTTPS
 port needs a redirect in front of it. The MQTT port is announced to them, so any free port works."""
 
-REQUIREMENT = "rusthinq==0.2.3"
-
 DEFAULT_URL = "http://127.0.0.1:44401"
 DEFAULT_PREFIX = "rusthinq"
 """rusthinq's `[drivers] topic_prefix`: the IL prefix of its devices and the root of their command topics."""
@@ -50,7 +48,3 @@ PLATFORMS = [
     "valve",
 ]
 """ildevice's platforms (`ildevice_ha.const.PLATFORMS`); each needs a module here."""
-
-ENTRY_PLATFORMS = [*PLATFORMS, "update"]
-"""What an entry forwards: ildevice's platforms and this integration's own `update` (the drivers of the embedded
-daemon)."""

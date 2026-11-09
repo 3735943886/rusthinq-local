@@ -25,11 +25,12 @@ instead of LG's cloud, and their drivers' output becomes Home Assistant devices 
    - **Move an existing rusthinq into Home Assistant** to keep an installation you already run
      (see [Moving an existing installation](#moving-an-existing-installation)).
 
-On the first start Home Assistant installs the `rusthinq` package from PyPI (the daemon binaries), creates a CA and
-downloads the drivers ([rusthinq-scripts](https://github.com/3735943886/rusthinq-scripts)). Everything lives in
+Home Assistant installs the `rusthinq` package from PyPI (the daemon binaries) with the integration. On the first start
+it creates a CA and downloads the drivers: the [rusthinq-scripts](https://github.com/3735943886/rusthinq-scripts)
+release this version of the integration pins. Drivers change only with a new integration release. Everything lives in
 `/config/rusthinq/`, which Home Assistant backups include. `ca.key` and the LG account files are secrets.
 
-The rusthinq service device has a **Download backup** button. Press it, then follow the authenticated download link in
+The rusthinq service device has a **Download backup** button, for administrators. Press it, then follow the authenticated download link in
 the Home Assistant notification. The archive contains the daemon configuration, CA, device ledger and LG account
 files needed to move the installation. In **Configure**, **Reset rusthinq data** clears those files and retained device
 state, then creates a new CA; appliances may need provisioning again. Downloaded binaries and drivers are kept.
@@ -125,8 +126,7 @@ take the names they have in the LG ThinQ app, and each device's LG bridge keeps 
 - **Each appliance**: the entities its driver describes (climate, sensors, switches…), plus
   - diagnostic: *Local connection*, *LG bridge*, *Driver* (a problem when the driver failed or is missing), *Firmware*;
   - configuration (with an LG account): *LG bridge* switch (enable/disable), *Pair with LG* and *Unpair from LG*.
-- **rusthinq** (a service device): *LG account*, and *Drivers*, an update entity that installs the latest
-  rusthinq-scripts; the daemon reloads them without restarting.
+- **rusthinq** (a service device): *LG account*, and *Download backup* (administrators only).
 
 Entities are unavailable while the daemon is not running. An appliance that is off (a washer leaves Wi-Fi when switched
 off) keeps its entities across Home Assistant restarts, unavailable until it connects again.

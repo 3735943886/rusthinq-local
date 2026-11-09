@@ -1,14 +1,17 @@
-"""rusthinq-scripts: installing and updating the drivers, and the update entity, against the real daemon."""
+"""rusthinq-scripts: installing the pinned release and changing to another pin, against the real daemon."""
 
-import asyncio
 import gzip
 import io
 import json
+import re
+import shutil
 import tarfile
 from pathlib import Path
 
 import aiohttp
 import pytest
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.rusthinq import scripts
@@ -24,6 +27,7 @@ from custom_components.rusthinq.const import (
 )
 
 OLD, NEW = "a" * 40, "b" * 40
+"""The commit installed before, and the one the integration pins (`scripts.COMMIT`, stubbed)."""
 
 
 def tarball(files: dict[str, str]) -> bytes:
@@ -88,14 +92,11 @@ def embedded_entry(hass, tmp_path, socket_enabled, enable_custom_integrations, m
     scripts.install(tmp_path / DOMAIN, tarball(OLD_TREE))
     downloads = []
 
-    async def latest(_http):
-        return NEW
-
-    async def download(_http, ref=scripts.BRANCH):
-        downloads.append(ref)
+    async def download(_http, ref=None):
+        downloads.append(ref or scripts.COMMIT)
         return tarball(NEW_TREE)
 
-    monkeypatch.setattr(scripts, "latest_commit", latest)
+    monkeypatch.setattr(scripts, "COMMIT", NEW)
     monkeypatch.setattr(scripts, "download", download)
     entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data={
         CONF_MODE: MODE_EMBEDDED, CONF_PREFIX: "rusthinq", CONF_HTTPS_PORT: 0, CONF_MQTT_PORT: 0,
@@ -105,23 +106,6 @@ def embedded_entry(hass, tmp_path, socket_enabled, enable_custom_integrations, m
     return entry
 
 
-async def test_setup_does_not_wait_for_github(hass, embedded_entry, monkeypatch):
-    checked = asyncio.Event()
-
-    async def unreachable(_http):
-        checked.set()
-        await asyncio.sleep(3600)
-
-    monkeypatch.setattr(scripts, "latest_commit", unreachable)
-    async with asyncio.timeout(20):  # the daemon's start, not GitHub's timeout
-        assert await hass.config_entries.async_setup(embedded_entry.entry_id)
-    await asyncio.wait_for(checked.wait(), 5)
-    state = hass.states.get("update.rusthinq_drivers")
-    assert state.attributes["installed_version"] == OLD[:7]
-    assert state.state == "off"  # upstream unknown yet: nothing offered
-    assert await hass.config_entries.async_unload(embedded_entry.entry_id)  # cancels the pending check
-
-
 async def daemon_source(entry) -> dict:
     daemon = entry.runtime_data.daemon
     async with aiohttp.ClientSession() as http, http.get(f"{daemon.url}/api/diagnostics",
@@ -129,24 +113,48 @@ async def daemon_source(entry) -> dict:
         return json.loads(await response.text())["drivers"]["source"]
 
 
-async def test_the_update_entity_installs_upstream_and_the_daemon_reloads(hass, embedded_entry):
+async def test_a_start_installs_the_pinned_release(hass, embedded_entry):
     entry = embedded_entry
     assert await hass.config_entries.async_setup(entry.entry_id)
-    async with asyncio.timeout(5):  # upstream is checked after setup
-        while hass.states.get("update.rusthinq_drivers").state != "on":
-            await asyncio.sleep(0.05)
-    state = hass.states.get("update.rusthinq_drivers")
-    assert state.attributes["installed_version"] == OLD[:7]
-    assert state.attributes["latest_version"] == NEW[:7]
-    assert state.attributes["release_url"] == scripts.compare_url(OLD, NEW)
-    assert (await daemon_source(entry))["commit"] == OLD
-    pid = entry.runtime_data.daemon._proc.pid
-
-    await hass.services.async_call("update", "install", {"entity_id": "update.rusthinq_drivers"}, blocking=True)
     assert entry.downloads == [NEW]
-    assert hass.states.get("update.rusthinq_drivers").state == "off"
-    async with asyncio.timeout(5):
-        while (await daemon_source(entry))["commit"] != NEW:
-            await asyncio.sleep(0.1)
-    assert entry.runtime_data.daemon._proc.pid == pid  # reloaded, not restarted
+    assert (await daemon_source(entry))["commit"] == NEW
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.downloads == [NEW]  # already pinned: nothing downloaded
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_failed_download_keeps_the_installed_drivers(hass, embedded_entry, monkeypatch):
+    async def offline(_http, ref=None):
+        raise scripts.ScriptsError("offline")
+
+    monkeypatch.setattr(scripts, "download", offline)
+    entry = embedded_entry
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    assert (await daemon_source(entry))["commit"] == OLD
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_without_drivers_a_failed_download_fails_the_start(hass, embedded_entry, monkeypatch, tmp_path):
+    async def offline(_http, ref=None):
+        raise scripts.ScriptsError("offline")
+
+    monkeypatch.setattr(scripts, "download", offline)
+    shutil.rmtree(tmp_path / DOMAIN / "scripts")
+    assert not await hass.config_entries.async_setup(embedded_entry.entry_id)
+    assert embedded_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_the_old_drivers_update_entity_is_removed(hass, embedded_entry):
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create("update", DOMAIN, f"{embedded_entry.entry_id}-scripts",
+                                       config_entry=embedded_entry)
+    assert await hass.config_entries.async_setup(embedded_entry.entry_id)
+    assert registry.async_get(old.entity_id) is None
+    assert await hass.config_entries.async_unload(embedded_entry.entry_id)
+
+
+def test_the_pin_names_a_dated_release_and_a_full_commit():
+    assert re.fullmatch(r"\d{4}\.\d{2}\.\d{2}(\.[1-9]\d*)?", scripts.RELEASE)
+    assert re.fullmatch(r"[0-9a-f]{40}", scripts.COMMIT)

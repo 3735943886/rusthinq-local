@@ -8,6 +8,7 @@ ildevice-homeassistant (manifest `requirements`); the IL device integration itse
 
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -15,6 +16,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import Event, HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady, HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
 
@@ -29,10 +31,11 @@ from .const import (
     CONF_THINQ1_PORT,
     DEFAULT_PORTS,
     DOMAIN,
-    ENTRY_PLATFORMS,
     MODE_EMBEDDED,
+    PLATFORMS,
 )
 from .embedded import DaemonError, EmbeddedDaemon, PortsUnavailable, ports_issue
+from .http import BackupView
 from .retained import RetainedStore
 from .status import DeviceStatus
 
@@ -52,8 +55,6 @@ type RusthinqConfigEntry = ConfigEntry[RusthinqData]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    from .http import BackupView
-
     hass.http.register_view(BackupView)
     return True
 
@@ -65,7 +66,32 @@ def daemon_ports(data) -> dict[str, int]:
             "thinq1_https": ports[CONF_THINQ1_HTTPS_PORT], "thinq1": ports[CONF_THINQ1_PORT]}
 
 
+ILDEVICE_MODULES = (
+    "ildevice_ha.attach",
+    "ildevice_ha.const",
+    "ildevice_ha.core.descriptor",
+    "ildevice_ha.core.memory",
+    "ildevice_ha.core.plan",
+    "ildevice_ha.core.topics",
+)
+"""The `ildevice_ha` modules imported while setting up (here and in `retained.py`). They are imported in the
+executor first, so the imports on the event loop only look them up."""
+
+
+def _import_ildevice() -> None:
+    for name in ILDEVICE_MODULES:
+        importlib.import_module(name)
+
+
+def _remove_drivers_update(hass: HomeAssistant, entry: RusthinqConfigEntry) -> None:
+    """Drop the "Drivers" update entity of 0.1.2 and earlier; drivers now move with integration releases."""
+    registry = er.async_get(hass)
+    if entity_id := registry.async_get_entity_id("update", DOMAIN, f"{entry.entry_id}-scripts"):
+        registry.async_remove(entity_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:
+    await hass.async_add_import_executor_job(_import_ildevice)
     from ildevice_ha.attach import build_hub
     from ildevice_ha.const import CONF_AUTO_ADD, CONF_IL_PREFIX
     from ildevice_ha.core.memory import InProcessTransport
@@ -86,6 +112,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
             ports_issue(hass, err.problems)
         raise ConfigEntryNotReady(str(err)) from err
     ports_issue(hass, None)
+    _remove_drivers_update(hass, entry)
 
     async def stop_daemon(_event: Event) -> None:
         # Home Assistant does not unload entries when it stops.
@@ -104,7 +131,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
     status = DeviceStatus(hass, entry, client)
     entry.async_on_unload(status.start())
     entry.runtime_data = RusthinqData(hub, client, daemon, status)
-    await hass.config_entries.async_forward_entry_setups(entry, ENTRY_PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await hub.async_start()
     await client.start()
     return True
@@ -113,7 +140,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
 async def async_unload_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:
     data = entry.runtime_data
     await data.client.stop()
-    unloaded = await hass.config_entries.async_unload_platforms(entry, ENTRY_PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         await data.hub.async_stop()
     await data.daemon.async_stop()

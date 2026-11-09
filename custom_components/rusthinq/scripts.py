@@ -1,5 +1,8 @@
-"""rusthinq-scripts (the Rhai drivers) in `<config>/rusthinq/scripts`: which commit is there, which is upstream, and
-how a new one gets in.
+"""rusthinq-scripts (the Rhai drivers) in `<config>/rusthinq/scripts`: which commit is there and how the pinned one
+gets in.
+
+The integration pins one dated rusthinq-scripts release (`RELEASE`, by its commit `COMMIT`), so drivers change only with
+an integration release. A start whose installed commit differs from the pin installs the pinned one.
 
 A GitHub tarball carries its commit in `VERSION` (`export-subst`: `<sha> <date>`). The daemon watches the directory it
 canonicalized at start (`driver_watch.rs`, inotify, recursive), so an update changes files inside `scripts/` (each
@@ -19,9 +22,11 @@ from pathlib import Path
 import aiohttp
 
 REPOSITORY = "3735943886/rusthinq-scripts"
-BRANCH = "master"
+RELEASE = "2026.11.10"
+"""The pinned dated release of rusthinq-scripts; move it together with `COMMIT`."""
+COMMIT = "2c23e2413764b38699e6df97d53cd059b930dad7"
+"""The commit `RELEASE` tags. Downloads are by commit, so a moved tag cannot change what is installed."""
 DOWNLOAD_TIMEOUT = aiohttp.ClientTimeout(total=120)
-CHECK_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
 
 class ScriptsError(Exception):
@@ -30,10 +35,6 @@ class ScriptsError(Exception):
 
 def tarball_url(ref: str) -> str:
     return f"https://codeload.github.com/{REPOSITORY}/tar.gz/{ref}"
-
-
-def compare_url(old: str, new: str) -> str:
-    return f"https://github.com/{REPOSITORY}/compare/{old}...{new}"
 
 
 def installed_commit(directory: Path) -> str | None:
@@ -45,23 +46,7 @@ def installed_commit(directory: Path) -> str | None:
     return sha if len(sha) == 40 and all(c in "0123456789abcdef" for c in sha) else None
 
 
-async def latest_commit(http: aiohttp.ClientSession) -> str:
-    """The commit at the head of upstream master."""
-    try:
-        async with http.get(
-            f"https://api.github.com/repos/{REPOSITORY}/commits/{BRANCH}",
-            headers={"Accept": "application/vnd.github.sha"}, timeout=CHECK_TIMEOUT,
-        ) as response:
-            response.raise_for_status()
-            sha = (await response.text()).strip()
-    except (aiohttp.ClientError, TimeoutError) as err:
-        raise ScriptsError(f"could not check rusthinq-scripts: {err}") from err
-    if len(sha) != 40:
-        raise ScriptsError(f"unexpected answer from GitHub: {sha[:80]!r}")
-    return sha
-
-
-async def download(http: aiohttp.ClientSession, ref: str = BRANCH) -> bytes:
+async def download(http: aiohttp.ClientSession, ref: str = COMMIT) -> bytes:
     try:
         async with http.get(tarball_url(ref), timeout=DOWNLOAD_TIMEOUT) as response:
             response.raise_for_status()

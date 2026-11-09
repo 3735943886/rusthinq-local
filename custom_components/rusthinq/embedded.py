@@ -2,8 +2,8 @@
 
 Everything lives in `<config>/rusthinq/` under the names rusthinq's own installers use (`config-0.2.sh`), so an
 existing installation's CA and device files can be moved in: `ca.key`/`ca.cert`, `devices-v2.json`,
-`cloud-account-v2.json`, `scripts/` (rusthinq-scripts, downloaded on first start; see `scripts.py`), plus `bin/` (the binaries copied out
-of the `rusthinq` wheel, so the daemon still starts when the wheel cannot be reinstalled) and `rusthinq.pid`.
+`cloud-account-v2.json`, `scripts/` (the pinned rusthinq-scripts release; see `scripts.py`), plus `bin/` (the
+binaries copied out of the `rusthinq` wheel, a manifest requirement) and `rusthinq.pid`.
 `config.toml` is rewritten on every start: external MQTT off, the management API on a free 127.0.0.1 port with fresh
 random credentials.
 
@@ -35,11 +35,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.requirements import async_process_requirements
 
 from . import scripts
 from .client import basic_authorization
-from .const import DOMAIN, REQUIREMENT
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 _DAEMON_LOGGER = logging.getLogger(f"{__package__}.daemon")
@@ -336,17 +335,15 @@ class EmbeddedDaemon:
 
     async def _prepare(self) -> None:
         try:
-            await async_process_requirements(self._hass, DOMAIN, [REQUIREMENT])
             module = await self._hass.async_add_import_executor_job(importlib.import_module, "rusthinq")
             package_bin = (await self._hass.async_add_executor_job(module.binary_path)).parent
-        except (HomeAssistantError, ImportError, OSError) as err:
+        except (ImportError, OSError) as err:
             package_bin = None
-            _LOGGER.warning("could not install %s (%s); using the binaries copied last time", REQUIREMENT, err)
+            _LOGGER.warning("the rusthinq package is unusable (%s); using the binaries copied last time", err)
         await self._hass.async_add_executor_job(self._prepare_files, package_bin)
         self.version = await self._binary_version()
         await self._hass.async_add_executor_job(self._note_version)
-        if not await self._hass.async_add_executor_job((self._dir / "scripts").is_dir):
-            await self._download_scripts()
+        await self._install_scripts()
         self.management_port = await self._hass.async_add_executor_job(free_local_port)
         config = render_config(
             https_port=self._ports["https"], mqtt_port=self._ports["mqtt"],
@@ -361,7 +358,7 @@ class EmbeddedDaemon:
         if package_bin is not None:
             copy_binaries(package_bin, self._dir)
         if not (self._dir / "bin" / "rusthinq").is_file():
-            raise DaemonError(f"no rusthinq binary: {REQUIREMENT} could not be installed and none was copied before")
+            raise DaemonError("no rusthinq binary: the rusthinq package is unusable and none was copied before")
         ensure_ca(self._dir)
         stop_orphan(self.pidfile, self.config_path)
         if problems := busy_ports(self._ports):
@@ -389,13 +386,20 @@ class EmbeddedDaemon:
             return out.decode(errors="replace").strip().removeprefix("rusthinq ") or None
         return None
 
-    async def _download_scripts(self) -> None:
-        _LOGGER.info("downloading rusthinq-scripts (%s)", scripts.tarball_url(scripts.BRANCH))
+    async def _install_scripts(self) -> None:
+        """Install the pinned rusthinq-scripts release unless it is what `scripts/` holds. Without it, drivers that
+        are already there are kept (with a warning, and tried again on the next start); with none, the start fails."""
+        installed = await self._hass.async_add_executor_job(scripts.installed_commit, self._dir)
+        if installed == scripts.COMMIT:
+            return
+        _LOGGER.info("installing rusthinq-scripts %s (%s)", scripts.RELEASE, scripts.tarball_url(scripts.COMMIT))
         try:
             tarball = await scripts.download(async_get_clientsession(self._hass))
             await self._hass.async_add_executor_job(scripts.install, self._dir, tarball)
         except scripts.ScriptsError as err:
-            raise DaemonError(str(err)) from err
+            if not await self._hass.async_add_executor_job((self._dir / "scripts").is_dir):
+                raise DaemonError(str(err)) from err
+            _LOGGER.warning("%s; keeping the drivers installed before", err)
 
     # ---- running -------------------------------------------------------------------------
 
