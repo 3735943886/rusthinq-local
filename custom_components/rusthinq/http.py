@@ -3,6 +3,7 @@ and the LG account files."""
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 
 from aiohttp import web
@@ -12,6 +13,8 @@ from homeassistant.core import HomeAssistant
 from .backup import create
 from .const import DOMAIN
 from .embedded import data_dir
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class BackupView(HomeAssistantView):
@@ -29,12 +32,13 @@ class BackupView(HomeAssistantView):
         try:
             archive = await hass.async_add_executor_job(create, data_dir(hass))
         except (OSError, ValueError) as err:
-            raise web.HTTPServiceUnavailable(text=f"Could not create rusthinq backup: {err}") from err
+            _LOGGER.error("Could not create rusthinq backup: %s", err)
+            raise web.HTTPServiceUnavailable(
+                text="Could not create rusthinq backup; see the Home Assistant log"
+            ) from err
         stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         return web.Response(
             body=archive,
             content_type="application/gzip",
             headers={"Content-Disposition": f'attachment; filename="rusthinq-backup-{stamp}.tar.gz"'},
         )
-
-
