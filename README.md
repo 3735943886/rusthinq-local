@@ -17,7 +17,7 @@ instead of LG's cloud, and their drivers' output becomes Home Assistant devices 
 
 ## Installation
 
-1. In Marketplace, find **rusthinq** under Integrations and download it, then restart Home Assistant. If this repository
+1. In Marketplace, find **rusthinq** under Integrations and download it. If this repository
    has not yet appeared in the Marketplace default store, add `https://github.com/3735943886/rusthinq-local` using
    **Add from link** and download it.
 2. Settings → Devices & services → Add integration → **rusthinq**, and choose:
