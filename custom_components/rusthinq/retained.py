@@ -18,6 +18,9 @@ from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from ildevice_ha.core.descriptor import DescriptorError, parse_descriptor
+from ildevice_ha.core.plan import availability_prop
+from ildevice_ha.core.topics import descriptor_id, resolve_topics, state_topic
 
 from .client import ManagementClient
 from .const import DOMAIN
@@ -89,10 +92,6 @@ def _store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, str]]:
 
 def _unavailable(stored: dict[str, str], prefix: str) -> dict[str, str]:
     """`false` on the state topic of each stored descriptor's `available` role property."""
-    from ildevice_ha.core.descriptor import DescriptorError, parse_descriptor
-    from ildevice_ha.core.plan import availability_prop
-    from ildevice_ha.core.topics import descriptor_id, resolve_topics, state_topic
-
     marks = {}
     for topic, payload in stored.items():
         if descriptor_id(topic, prefix) is None:

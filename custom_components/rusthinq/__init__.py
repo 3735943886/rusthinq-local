@@ -19,7 +19,11 @@ from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady, Home
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
+from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.loader import async_get_integration
+from ildevice_ha.attach import build_hub
+from ildevice_ha.const import CONF_AUTO_ADD, CONF_IL_PREFIX
+from ildevice_ha.core.memory import InProcessTransport
 
 from . import panel
 from .client import ManagementClient, ManagementError
@@ -42,6 +46,14 @@ from .status import DeviceStatus
 
 if TYPE_CHECKING:
     from ildevice_ha.hub import IlHub
+
+# With this module, so in the import executor job that loads the integration: forwarding the entry imports the platform
+# modules not loaded yet (`Integration.async_get_platforms`), and the Home Assistant component of each, in the import
+# executor, behind every other integration's imports while Home Assistant starts. `ildevice_ha.entity` holds the hub's
+# entity classes and imports those components.
+importlib.import_module("ildevice_ha.entity")
+for _platform in PLATFORMS:
+    importlib.import_module(f"{__package__}.{_platform}")
 
 
 @dataclass
@@ -68,23 +80,6 @@ def daemon_ports(data) -> dict[str, int]:
             "thinq1_https": ports[CONF_THINQ1_HTTPS_PORT], "thinq1": ports[CONF_THINQ1_PORT]}
 
 
-ILDEVICE_MODULES = (
-    "ildevice_ha.attach",
-    "ildevice_ha.const",
-    "ildevice_ha.core.descriptor",
-    "ildevice_ha.core.memory",
-    "ildevice_ha.core.plan",
-    "ildevice_ha.core.topics",
-)
-"""The `ildevice_ha` modules imported while setting up (here and in `retained.py`). They are imported in the
-executor first, so the imports on the event loop only look them up."""
-
-
-def _import_ildevice() -> None:
-    for name in ILDEVICE_MODULES:
-        importlib.import_module(name)
-
-
 RETIRED_ENTITIES = (
     # The "Drivers" update entity of 0.1.2 and earlier; drivers now move with integration releases.
     ("update", "scripts"),
@@ -102,11 +97,14 @@ def _remove_retired_entities(hass: HomeAssistant, entry: RusthinqConfigEntry) ->
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:
-    await hass.async_add_import_executor_job(_import_ildevice)
-    from ildevice_ha.attach import build_hub
-    from ildevice_ha.const import CONF_AUTO_ADD, CONF_IL_PREFIX
-    from ildevice_ha.core.memory import InProcessTransport
+    """Start the daemon, then the platforms, the hub and the management client. A failure to start raises
+    `ConfigEntryNotReady`, which Home Assistant retries with backoff and shows.
 
+    While Home Assistant starts, every integration queues its imports on the one import executor thread: on a NanoPi
+    R5C, importing `ildevice_ha` and `rusthinq` here waited about 40 s, and with those at module level, forwarding the
+    platforms waited about 30 s instead, for this integration's platform modules. All of them load with the
+    integration now (above, and `embedded`).
+    """
     if entry.data.get(CONF_MODE) != MODE_EMBEDDED:
         raise ConfigEntryError(
             "Connecting to a rusthinq that runs elsewhere is no longer supported: delete this entry and use that "
@@ -142,10 +140,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
     status = DeviceStatus(hass, entry, client)
     entry.async_on_unload(status.start())
     entry.runtime_data = RusthinqData(hub, client, daemon, status)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    await hub.async_start()
-    await client.start()
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        await hub.async_start()
+        await client.start()
+    except BaseException as err:
+        await client.stop()
+        await _unload_platforms(hass, entry)
+        await hub.async_stop()
+        await daemon.async_stop()
+        if isinstance(err, Exception):
+            raise ConfigEntryNotReady(f"could not start: {err}") from err
+        raise
     return True
+
+
+async def _unload_platforms(hass: HomeAssistant, entry: RusthinqConfigEntry) -> None:
+    """After a failed start, unload the entity platforms set up for the entry: a forward that failed partway set up
+    only some of them. Home Assistant keeps the platform objects of earlier setups listed, hence the set."""
+    platforms = {p.domain for p in async_get_platforms(hass, DOMAIN)
+                 if p.config_entry is not None and p.config_entry.entry_id == entry.entry_id}
+    if platforms:
+        await hass.config_entries.async_unload_platforms(entry, platforms)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:
