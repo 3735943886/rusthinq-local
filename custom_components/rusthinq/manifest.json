@@ -6,7 +6,10 @@
   ],
   "config_flow": true,
   "dependencies": [
-    "file_upload"
+    "file_upload",
+    "http",
+    "panel_custom",
+    "websocket_api"
   ],
   "documentation": "https://github.com/3735943886/rusthinq-local",
   "integration_type": "hub",
