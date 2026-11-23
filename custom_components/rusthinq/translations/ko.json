@@ -83,13 +83,6 @@
       "already_configured": "rusthinq가 이미 설정되어 있습니다."
     }
   },
-  "entity": {
-    "button": {
-      "backup": {
-        "name": "백업 다운로드"
-      }
-    }
-  },
   "issues": {
     "ports_unavailable": {
       "title": "rusthinq가 포트를 열 수 없습니다",
@@ -105,7 +98,8 @@
           "login": "LG 로그인",
           "logout": "로그아웃",
           "refresh": "저장된 자격 증명으로 다시 로그인",
-          "reset": "rusthinq 데이터 초기화"
+          "reset": "rusthinq 데이터 초기화",
+          "backup": "백업 다운로드"
         }
       },
       "login": {
@@ -142,10 +136,10 @@
       "reset_required": "초기화하려면 확인란을 선택하세요."
     },
     "abort": {
-      "not_running": "rusthinq가 실행 중이 아닙니다.",
       "no_bridge": "이 rusthinq에는 LG 브리지가 없습니다.",
       "cloud_failed": "rusthinq가 처리하지 못했습니다: {problem}",
-      "reset_failed": "초기화 후 rusthinq를 다시 시작하지 못했습니다."
+      "reset_failed": "초기화 후 rusthinq를 다시 시작하지 못했습니다.",
+      "backup": "[백업 페이지 열기]({page})에서 rusthinq의 포터블 백업(CA, 기기 기록, LG 계정)을 다운로드할 수 있습니다. 관리자만 열 수 있습니다."
     }
   },
   "exceptions": {

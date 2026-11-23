@@ -1,5 +1,7 @@
 """Deleting an appliance in Home Assistant forgets it in rusthinq; diagnostics for bug reports."""
 
+import json
+
 import pytest
 from conftest import AC
 from homeassistant.helpers import device_registry as dr
@@ -96,14 +98,39 @@ async def diagnostics(hass, hass_client, path: str) -> dict:
 
 
 async def test_diagnostics(hass, hass_client, air_conditioner):
+    air_conditioner.devices[AC]["name"] = "Bedroom aircon"
     entry = await setup(hass)
     await eventually(hass, lambda: climate_entity(hass))
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, "settings": {"hostname": "thinq.home.example", "bridge_dns": ["192.168.0.1"]}}
+    )
+    account = {"busy": False, "country": "KR", "error": "kim@example.com: token expired", "loggedIn": True}
+    entry.runtime_data.client.account = account
+    entry.runtime_data.daemon.lines = [
+        f"INFO device {AC} connected from 192.168.0.23 (a4:5e:60:12:34:56) as Bedroom aircon",
+        "WARN bridge fe80::1c2b:3aff:fe4d:5e6f refused 0123456789abcdef0123 for kim@example.com",
+        "INFO rusthinq_app::management listening at 12:34:56",
+    ]
     entry_data = await diagnostics(hass, hass_client, entry.entry_id)
     assert entry_data["connected"] is True
     assert entry_data["rusthinq"]["version"] == "0.2.2-rc4"
-    assert AC in entry_data["devices"]
+    assert entry_data["devices"]["device_1"]["model"] == "CST_570004_WW"
+    assert entry_data["devices"]["device_1"]["name"] == "**REDACTED**"
+    assert entry_data["account"] == {**account, "country": "**REDACTED**", "error": "**REDACTED**"}
+    assert entry_data["entry"]["settings"] == {"hostname": "**REDACTED**", "bridge_dns": "**REDACTED**"}
+    assert entry_data["daemon"]["log"] == [
+        "INFO device device_1 connected from **REDACTED** (**REDACTED**) as **REDACTED**",
+        "WARN bridge **REDACTED** refused **REDACTED** for **REDACTED**",
+        "INFO rusthinq_app::management listening at 12:34:56",
+    ]
 
     [device] = appliances(hass, entry)
     per_device = await diagnostics(hass, hass_client, f"{entry.entry_id}/device/{device.id}")
-    assert per_device[AC]["descriptor"]["model"]
-    assert per_device[AC]["retained"]
+    assert list(per_device) == ["device_1"]
+    assert per_device["device_1"]["descriptor"]["model"]
+    assert per_device["device_1"]["retained"]
+    assert all(topic.startswith("rusthinq/device_1") for topic in per_device["device_1"]["retained"])
+
+    for text in (json.dumps(entry_data), json.dumps(per_device)):
+        for secret in (AC, "Bedroom aircon", "kim@example.com", "thinq.home.example", "192.168.0"):
+            assert secret not in text

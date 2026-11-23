@@ -14,18 +14,15 @@ All are unavailable while the daemon is unreachable.
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components import persistent_notification
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.components.button import ButtonEntity
-from homeassistant.components.http.auth import async_sign_path
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError, Unauthorized
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import Entity
@@ -85,16 +82,12 @@ class DeviceStatus:
         self._known: set[str] = set()
         self._bridge_known: set[str] = set()
         self._account_added = False
-        self._backup_added = False
 
     def start(self) -> Callable[[], None]:
         return self.client.add_listener(self._changed)
 
     def register_platform(self, platform: str, add_entities: AddEntitiesCallback) -> None:
         self._adders[platform] = add_entities
-        if platform == "button" and not self._backup_added:
-            self._backup_added = True
-            add_entities([BackupButton(self._entry)])
         self._changed()
 
     @callback
@@ -154,41 +147,6 @@ class StatusEntity(Entity):
         self.async_on_remove(async_dispatcher_connect(
             self.hass, _signal(self._status._entry.entry_id), self.async_write_ha_state
         ))
-
-
-class BackupButton(ButtonEntity):
-    """Offer a direct, authenticated download link for a portable backup."""
-
-    _attr_has_entity_name = True
-    _attr_translation_key = "backup"
-    _attr_icon = "mdi:download"
-    _attr_entity_category = EntityCategory.CONFIG
-
-    def __init__(self, entry: RusthinqConfigEntry) -> None:
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}-backup"
-        self._attr_device_info = service_device(entry)
-
-    async def async_press(self) -> None:
-        # The link is signed for whoever pressed (the frontend's websocket connection); the view checks admin as well.
-        user_id = self._context.user_id if self._context else None
-        user = await self.hass.auth.async_get_user(user_id) if user_id else None
-        if user is None or not user.is_admin:
-            raise Unauthorized(context=self._context)
-        path = f"/api/rusthinq/backup/{self._entry.entry_id}"
-        link = async_sign_path(self.hass, path, timedelta(hours=1))
-        korean = self.hass.config.language.startswith("ko")
-        message = (
-            f"[백업 다운로드]({link})\n\n새 탭에서 열기(Ctrl+클릭) 또는 우클릭하여 다운로드하세요."
-            if korean
-            else f"[Download the rusthinq backup]({link})\n\nOpen in a new tab (Ctrl+click) or right-click to download."
-        )
-        persistent_notification.async_create(
-            self.hass,
-            message,
-            title="rusthinq 백업" if korean else "rusthinq backup",
-            notification_id=f"rusthinq_backup_{self._entry.entry_id}",
-        )
 
 
 class LocalConnection(StatusEntity, BinarySensorEntity):

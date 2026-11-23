@@ -83,13 +83,6 @@
       "already_configured": "rusthinq is already set up."
     }
   },
-  "entity": {
-    "button": {
-      "backup": {
-        "name": "Download backup"
-      }
-    }
-  },
   "issues": {
     "ports_unavailable": {
       "title": "rusthinq cannot open its ports",
@@ -105,7 +98,8 @@
           "login": "Sign in to LG",
           "logout": "Sign out",
           "refresh": "Sign in again with the saved credentials",
-          "reset": "Reset rusthinq data"
+          "reset": "Reset rusthinq data",
+          "backup": "Download a backup"
         }
       },
       "login": {
@@ -142,10 +136,10 @@
       "reset_required": "Select the confirmation box to reset rusthinq."
     },
     "abort": {
-      "not_running": "rusthinq is not running.",
       "no_bridge": "This rusthinq has no LG bridge.",
       "cloud_failed": "rusthinq could not do that: {problem}",
-      "reset_failed": "rusthinq could not be restarted after reset."
+      "reset_failed": "rusthinq could not be restarted after reset.",
+      "backup": "[Open the backup page]({page}) to download a portable backup of rusthinq: the CA, the device records and the LG account. Only administrators can open it."
     }
   },
   "exceptions": {

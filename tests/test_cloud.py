@@ -1,16 +1,14 @@
 """The LG account (options flow, account sensor) and each device's LG bridge controls."""
 
 import asyncio
-from datetime import timedelta
+import base64
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from conftest import AC, EMBEDDED
-from homeassistant.components.http.auth import async_sign_path
+from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
-from homeassistant.core import Context
-from homeassistant.exceptions import HomeAssistantError, Unauthorized
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -55,7 +53,7 @@ async def test_signing_in_and_out_through_the_options(hass, air_conditioner):
     assert state(hass, "binary_sensor", account).state == STATE_OFF
 
     menu = await hass.config_entries.options.async_init(entry.entry_id)
-    assert menu["menu_options"] == ["login", "reset"]
+    assert menu["menu_options"] == ["login", "backup", "reset"]
     form = await hass.config_entries.options.async_configure(menu["flow_id"], {"next_step_id": "login"})
     assert form["step_id"] == "login"
     paste = await hass.config_entries.options.async_configure(form["flow_id"], {"country": " kr "})
@@ -70,7 +68,7 @@ async def test_signing_in_and_out_through_the_options(hass, air_conditioner):
     assert state(hass, "binary_sensor", account).attributes["country"] == "KR"
 
     menu = await hass.config_entries.options.async_init(entry.entry_id)
-    assert menu["menu_options"] == ["logout", "refresh", "reset"]
+    assert menu["menu_options"] == ["logout", "refresh", "backup", "reset"]
     confirm = await hass.config_entries.options.async_configure(menu["flow_id"], {"next_step_id": "logout"})
     done = await hass.config_entries.options.async_configure(confirm["flow_id"], {})
     assert done["type"] == "create_entry"
@@ -111,54 +109,66 @@ async def backup_setup(hass):
         'ca_key = "ca.key"\nca_certificate = "ca.cert"\ndevice_ledger = "devices-v2.json"\n'
     )
     await hass.async_block_till_done()
-    backup_button = er.async_get(hass).async_get_entity_id("button", DOMAIN, f"{entry.entry_id}-backup")
-    return entry, backup_button
+    return entry
 
 
-async def test_backup_notification_uses_a_signed_download_link(hass, air_conditioner, hass_ws_client,
-                                                                hass_client_no_auth):
-    entry, backup_button = await backup_setup(hass)
-    assert backup_button is not None
-    assert backup_button.endswith("download_backup")
-    assert hass.states.get(backup_button).name.endswith("Download backup")
-
-    # As the frontend presses it: over the websocket, as the signed-in administrator.
+async def test_an_administrator_downloads_the_backup_over_the_websocket(hass, air_conditioner, hass_ws_client):
+    entry = await backup_setup(hass)
     ws = await hass_ws_client(hass)
-    with patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify:
-        await ws.send_json_auto_id({"type": "call_service", "domain": "button", "service": "press",
-                                    "target": {"entity_id": backup_button}})
-        assert (await ws.receive_json())["success"]
-
-    message = notify.call_args.args[1]
-    signed_path = message.split("(", 1)[1].split(")", 1)[0]
-    response = await (await hass_client_no_auth()).get(signed_path)
-    assert response.status == 200
-    imported = migrate.read_export(await response.read())
+    await ws.send_json_auto_id({"type": "rusthinq/backup"})
+    answer = await ws.receive_json()
+    assert answer["success"], answer
+    assert answer["result"]["filename"].startswith("rusthinq-backup-")
+    assert answer["result"]["filename"].endswith(".tar.gz")
+    imported = migrate.read_export(base64.b64decode(answer["result"]["data"]))
     assert set(imported.files) == {"ca.key", "ca.cert", "devices-v2.json"}
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
-async def test_only_administrators_get_the_backup(hass, air_conditioner, hass_read_only_user,
-                                                  hass_read_only_access_token, hass_client_no_auth):
-    entry, backup_button = await backup_setup(hass)
-    with (patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify,
-          pytest.raises(Unauthorized)):
-        await hass.services.async_call("button", "press", {"entity_id": backup_button}, blocking=True,
-                                       context=Context(user_id=hass_read_only_user.id))
-    notify.assert_not_called()
-    # An automation (no user) is refused too.
-    with (patch("custom_components.rusthinq.status.persistent_notification.async_create") as notify,
-          pytest.raises(Unauthorized)):
-        await hass.services.async_call("button", "press", {"entity_id": backup_button}, blocking=True)
-    notify.assert_not_called()
+async def test_only_administrators_get_the_backup(hass, air_conditioner, hass_ws_client, hass_read_only_access_token):
+    entry = await backup_setup(hass)
+    ws = await hass_ws_client(hass, hass_read_only_access_token)
+    await ws.send_json_auto_id({"type": "rusthinq/backup"})
+    answer = await ws.receive_json()
+    assert not answer["success"]
+    assert answer["error"]["code"] == "unauthorized"
+    assert await hass.config_entries.async_unload(entry.entry_id)
 
-    path = f"/api/{DOMAIN}/backup/{entry.entry_id}"
-    client = await hass_client_no_auth()
-    response = await client.get(path, headers={"Authorization": f"Bearer {hass_read_only_access_token}"})
-    assert response.status == 403
-    token = hass.auth.async_validate_access_token(hass_read_only_access_token)
-    signed = async_sign_path(hass, path, timedelta(minutes=1), refresh_token_id=token.id)
-    assert (await client.get(signed)).status == 403
+
+async def test_the_backup_page_is_for_administrators_and_the_options_point_to_it(hass, air_conditioner,
+                                                                                 hass_client_no_auth):
+    entry = await setup(hass)
+    page = hass.data[DATA_PANELS]["rusthinq-backup"]
+    assert page.require_admin
+    assert page.sidebar_title is None
+    module = page.config["_panel_custom"]["module_url"]
+    response = await (await hass_client_no_auth()).get(module)
+    assert response.status == 200
+    assert "rusthinq/backup" in await response.text()
+
+    menu = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(menu["flow_id"], {"next_step_id": "backup"})
+    assert result["type"] == "abort"
+    assert result["reason"] == "backup"
+    assert result["description_placeholders"] == {"page": "/rusthinq-backup"}
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_the_backup_stays_reachable_while_rusthinq_is_not_running(hass):
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
+    entry.add_to_hass(hass)
+    menu = await hass.config_entries.options.async_init(entry.entry_id)
+    assert menu["menu_options"] == ["backup"]
+
+
+async def test_the_old_backup_button_is_removed(hass, air_conditioner):
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    registry.async_get_or_create("button", DOMAIN, f"{entry.entry_id}-backup", config_entry=entry)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entity(hass, "button", f"{entry.entry_id}-backup") is None
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 

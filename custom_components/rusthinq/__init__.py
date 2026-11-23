@@ -19,7 +19,9 @@ from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady, Home
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceEntry
+from homeassistant.loader import async_get_integration
 
+from . import panel
 from .client import ManagementClient, ManagementError
 from .const import (
     CONF_HTTPS_PORT,
@@ -35,7 +37,6 @@ from .const import (
     PLATFORMS,
 )
 from .embedded import DaemonError, EmbeddedDaemon, PortsUnavailable, ports_issue
-from .http import BackupView
 from .retained import RetainedStore
 from .status import DeviceStatus
 
@@ -55,7 +56,8 @@ type RusthinqConfigEntry = ConfigEntry[RusthinqData]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    hass.http.register_view(BackupView)
+    integration = await async_get_integration(hass, DOMAIN)
+    await panel.async_setup(hass, str(integration.version))
     return True
 
 
@@ -83,11 +85,20 @@ def _import_ildevice() -> None:
         importlib.import_module(name)
 
 
-def _remove_drivers_update(hass: HomeAssistant, entry: RusthinqConfigEntry) -> None:
-    """Drop the "Drivers" update entity of 0.1.2 and earlier; drivers now move with integration releases."""
+RETIRED_ENTITIES = (
+    # The "Drivers" update entity of 0.1.2 and earlier; drivers now move with integration releases.
+    ("update", "scripts"),
+    # The "Download backup" button of 0.1.3 and earlier: it posted a signed download link in a persistent
+    # notification, which every user sees. The backup now comes from an admin-only page (`panel.py`).
+    ("button", "backup"),
+)
+
+
+def _remove_retired_entities(hass: HomeAssistant, entry: RusthinqConfigEntry) -> None:
     registry = er.async_get(hass)
-    if entity_id := registry.async_get_entity_id("update", DOMAIN, f"{entry.entry_id}-scripts"):
-        registry.async_remove(entity_id)
+    for platform, suffix in RETIRED_ENTITIES:
+        if entity_id := registry.async_get_entity_id(platform, DOMAIN, f"{entry.entry_id}-{suffix}"):
+            registry.async_remove(entity_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:
@@ -112,7 +123,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
             ports_issue(hass, err.problems)
         raise ConfigEntryNotReady(str(err)) from err
     ports_issue(hass, None)
-    _remove_drivers_update(hass, entry)
+    _remove_retired_entities(hass, entry)
 
     async def stop_daemon(_event: Event) -> None:
         # Home Assistant does not unload entries when it stops.

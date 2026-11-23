@@ -9,7 +9,8 @@ stopped.
 There is one embedded entry per Home Assistant. Its ports are checked here, before anything is written.
 
 The options flow signs the daemon in to LG and out again, as the rusthinq dashboard does: rusthinq returns LG's sign-in
-address, the user signs in in a browser and pastes the address it ends on (`login/iabClose`).
+address, the user signs in in a browser and pastes the address it ends on (`login/iabClose`). It also points to the
+backup page (`panel.py`).
 """
 
 from __future__ import annotations
@@ -49,6 +50,7 @@ from .const import (
     MODE_EMBEDDED,
 )
 from .embedded import busy_ports, data_dir, reset_data
+from .panel import PANEL_PATH
 from .retained import RetainedStore
 
 PORT = vol.All(vol.Coerce(int), vol.Range(min=1, max=65535))
@@ -272,7 +274,9 @@ class LgAccountFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.state is not ConfigEntryState.LOADED:
-            return self.async_abort(reason="not_running")
+            # The backup reads files on disk, and is most wanted when the daemon cannot start.
+            return self.async_show_menu(step_id="init", menu_options=["backup"],
+                                        description_placeholders={"state": "not running", "error": "none"})
         account = self._client.account
         signed_in = bool(account.get("loggedIn"))
         menu_options = (["logout", "refresh"] if signed_in else ["login"])
@@ -280,12 +284,16 @@ class LgAccountFlow(OptionsFlow):
             menu_options = []
         return self.async_show_menu(
             step_id="init",
-            menu_options=menu_options + ["reset"],
+            menu_options=menu_options + ["backup", "reset"],
             description_placeholders={
                 "state": f"signed in ({account.get('country') or '?'})" if signed_in else "not signed in",
                 "error": account.get("error") or "none",
             },
         )
+
+    async def async_step_backup(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Point to the backup page; the backup itself never passes through the flow."""
+        return self.async_abort(reason="backup", description_placeholders={"page": f"/{PANEL_PATH}"})
 
     async def async_step_reset(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Clear rusthinq state and start again with a newly generated CA."""

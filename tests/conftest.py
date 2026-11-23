@@ -32,6 +32,18 @@ def no_github(monkeypatch):
     monkeypatch.setattr(scripts, "download", offline)
 
 
+@pytest.fixture(autouse=True)
+def no_frontend_build(monkeypatch):
+    """The backup page is a custom panel, so the integration depends on `panel_custom` and through it on `frontend`,
+    whose setup needs the built frontend (`hass_frontend`, not a test requirement). Panels register without it."""
+    from homeassistant.components import frontend
+
+    async def setup(hass, config):
+        return True
+
+    monkeypatch.setattr(frontend, "async_setup", setup)
+
+
 class StubDaemon:
     """Stands in for `EmbeddedDaemon`: the entry talks to the fake instead of a daemon of its own."""
 
