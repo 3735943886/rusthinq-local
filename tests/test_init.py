@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from conftest import AC, EMBEDDED
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_UNAVAILABLE
 from homeassistant.core import CoreState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -170,6 +170,26 @@ async def test_a_failed_start_is_retried_by_home_assistant_and_leaves_nothing_ru
     assert len(calls) == 2
     await eventually(hass, lambda: climate_entity(hass) and hass.states.get(climate_entity(hass)).state
                      != STATE_UNAVAILABLE)
+
+
+async def test_stopping_home_assistant_stops_the_client_before_the_daemon(hass, air_conditioner, monkeypatch, caplog):
+    """Home Assistant does not unload entries when it stops, and closes its HTTP session right after: a client still
+    running would try the stopped daemon again on that closed session."""
+    from conftest import StubDaemon
+
+    entry = await setup(hass)
+    client = entry.runtime_data.client
+    await eventually(hass, lambda: client.connected.is_set())
+    order = []
+
+    async def daemon_stop(self):
+        order.append(("daemon", client._runner is None))
+
+    monkeypatch.setattr(StubDaemon, "async_stop", daemon_stop)
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
+    await hass.async_block_till_done()
+    assert order == [("daemon", True)]
+    assert "failed unexpectedly" not in caplog.text
 
 
 async def test_the_config_flow_offers_no_connection_to_a_running_rusthinq(hass):

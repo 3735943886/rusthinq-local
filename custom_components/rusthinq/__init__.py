@@ -139,11 +139,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
     ports_issue(hass, None)
     _remove_retired_entities(hass, entry)
 
-    async def stop_daemon(_event: Event) -> None:
-        # Home Assistant does not unload entries when it stops.
+    client: ManagementClient | None = None
+
+    async def stop(_event: Event) -> None:
+        # Home Assistant does not unload entries when it stops. The client first: once the daemon is gone, its
+        # reconnect loop would try again on Home Assistant's HTTP session, which closes right after this event.
+        if client is not None:
+            await client.stop()
         await daemon.async_stop()
 
-    entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_daemon))
+    entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop))
 
     transport = InProcessTransport()
     # Every device of a rusthinq is the user's own appliance: add it, never offer it (ildevice's offers would go to
