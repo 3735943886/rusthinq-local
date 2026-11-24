@@ -2,12 +2,14 @@
 
 import asyncio
 import json
+from datetime import timedelta
 
 import pytest
 from conftest import AC, EMBEDDED, load
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.rusthinq import retained as retained_module
 from custom_components.rusthinq.const import DOMAIN, MODE_EMBEDDED
@@ -70,3 +72,19 @@ async def test_devices_rusthinq_forgot_are_not_kept(hass, hass_storage, air_cond
     assert await hass.config_entries.async_setup(entry.entry_id)
     await eventually(hass, lambda: f"rusthinq/{AC}/descriptor" in stored(hass_storage, entry))
     assert not [t for t in stored(hass_storage, entry) if gone in t]
+
+
+async def test_removing_the_entry_leaves_no_retained_file(hass, hass_storage, air_conditioner, monkeypatch):
+    """A save still scheduled when the entry is removed must not write the file again afterwards."""
+    monkeypatch.setattr(retained_module, "SAVE_DELAY", 30)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await eventually(hass, lambda: climate(hass) and climate(hass).state != STATE_UNAVAILABLE)
+    key = f"{DOMAIN}.{entry.entry_id}.retained"
+    assert key not in hass_storage  # the save is still scheduled
+
+    await hass.config_entries.async_remove(entry.entry_id)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=60))
+    await hass.async_block_till_done()
+    assert key not in hass_storage

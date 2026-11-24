@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant
@@ -59,10 +60,21 @@ class RetainedStore:
         if stored:
             _LOGGER.debug("restored %d retained publications", len(stored))
 
-    async def start(self, client: ManagementClient):
-        """Save whenever a device publishes; returns the function that stops it."""
+    async def start(self, client: ManagementClient) -> Callable[[], Awaitable[None]]:
+        """Save whenever a device publishes; returns the coroutine function that stops it.
+
+        Stopping saves now what is still scheduled, on this `Store`: a save left scheduled would write the file again
+        after `async_remove` (another `Store`) deleted it, when the entry is removed or reset.
+        """
         self._client = client
-        return await self._transport.subscribe(f"{self._prefix}/#", self._on_message)
+        unsubscribe = await self._transport.subscribe(f"{self._prefix}/#", self._on_message)
+
+        async def stop() -> None:
+            unsubscribe()
+            if self._pending:
+                await self._store.async_save(self._data())
+
+        return stop
 
     def _on_message(self, msg: Message) -> None:
         if not self._pending and self._device_of(msg.topic) is not None:
