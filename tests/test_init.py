@@ -3,6 +3,7 @@
 import asyncio
 import json
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from conftest import AC, EMBEDDED
@@ -102,13 +103,18 @@ async def test_unload(hass, air_conditioner):
 
 async def test_the_platform_modules_load_with_the_integration():
     """Forwarding the entry imports what is not loaded yet in the import executor, where it waits behind every other
-    integration's imports while Home Assistant starts."""
+    integration's imports while Home Assistant starts. Read from the source: by now earlier tests may have imported
+    the platform modules anyway."""
+    import ast
     import sys
 
-    import custom_components.rusthinq  # noqa: F401
+    import custom_components.rusthinq as integration
 
+    tree = ast.parse(Path(integration.__file__).read_text())
+    imported = {alias.name for node in tree.body if isinstance(node, ast.ImportFrom) and node.level == 1
+                and node.module is None for alias in node.names}
+    assert set(PLATFORMS) <= imported
     for platform in PLATFORMS:
-        assert f"custom_components.rusthinq.{platform}" in sys.modules
         assert f"homeassistant.components.{platform}" in sys.modules
 
 
