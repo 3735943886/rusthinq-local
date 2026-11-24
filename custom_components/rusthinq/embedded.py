@@ -18,7 +18,6 @@ import asyncio
 import contextlib
 import datetime as dt
 import errno
-import importlib
 import logging
 import os
 import secrets
@@ -35,6 +34,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+try:
+    import rusthinq as rusthinq_package
+except ImportError as err:  # the binaries copied last time can still run (see `_prepare`)
+    rusthinq_package = None
+    _PACKAGE_ERROR: ImportError | None = err
+else:
+    _PACKAGE_ERROR = None
 
 from . import scripts
 from .client import basic_authorization
@@ -335,8 +342,11 @@ class EmbeddedDaemon:
 
     async def _prepare(self) -> None:
         try:
-            module = await self._hass.async_add_import_executor_job(importlib.import_module, "rusthinq")
-            package_bin = (await self._hass.async_add_executor_job(module.binary_path)).parent
+            # Imported at module level: an import here would queue behind every other integration's while Home
+            # Assistant starts.
+            if rusthinq_package is None:
+                raise _PACKAGE_ERROR
+            package_bin = (await self._hass.async_add_executor_job(rusthinq_package.binary_path)).parent
         except (ImportError, OSError) as err:
             package_bin = None
             _LOGGER.warning("the rusthinq package is unusable (%s); using the binaries copied last time", err)

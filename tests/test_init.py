@@ -2,14 +2,18 @@
 
 import asyncio
 import json
+from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from conftest import AC, EMBEDDED
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_UNAVAILABLE
+from homeassistant.core import CoreState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.rusthinq.const import DOMAIN, MODE_EMBEDDED, PLATFORMS
 
@@ -36,6 +40,12 @@ def appliances(hass, entry) -> list:
     """The entry's devices but the rusthinq service device."""
     return [d for d in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
             if d.entry_type is not dr.DeviceEntryType.SERVICE]
+
+
+def entry_platforms(hass, entry) -> list[str]:
+    """The platforms now set up for the entry (`async_get_platforms` also lists the ones unloaded since)."""
+    return [domain for domain in PLATFORMS
+            if domain in hass.config.components and entry.entry_id in hass.data[domain]._platforms]
 
 
 async def setup(hass) -> MockConfigEntry:
@@ -89,6 +99,97 @@ async def test_unload(hass, air_conditioner):
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.NOT_LOADED
     assert hass.states.get(climate_entity(hass)).state == STATE_UNAVAILABLE
+
+
+async def test_the_platform_modules_load_with_the_integration():
+    """Forwarding the entry imports what is not loaded yet in the import executor, where it waits behind every other
+    integration's imports while Home Assistant starts. Read from the source: by now earlier tests may have imported
+    the platform modules anyway."""
+    import ast
+    import sys
+
+    import custom_components.rusthinq as integration
+
+    tree = ast.parse(Path(integration.__file__).read_text())
+    imported = {alias.name for node in tree.body if isinstance(node, ast.ImportFrom) and node.level == 1
+                and node.module is None for alias in node.names}
+    assert set(PLATFORMS) <= imported
+    for platform in PLATFORMS:
+        assert f"homeassistant.components.{platform}" in sys.modules
+
+
+async def test_while_home_assistant_starts_the_platforms_are_set_up_in_setup(hass, air_conditioner):
+    """Entities that appear only after the start are an `unavailable` -> value change to automations at every restart."""
+    hass.set_state(CoreState.starting)
+    entry = await setup(hass)
+    assert entry.state is ConfigEntryState.LOADED
+    assert set(entry_platforms(hass, entry)) == set(PLATFORMS)
+    await eventually(hass, lambda: climate_entity(hass) and hass.states.get(climate_entity(hass)))
+
+
+async def test_a_reload_sets_the_platforms_up_again(hass, air_conditioner):
+    entry = await setup(hass)
+    await eventually(hass, lambda: climate_entity(hass) and hass.states.get(climate_entity(hass)))
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    await eventually(hass, lambda: hass.states.get(climate_entity(hass)).state != STATE_UNAVAILABLE)
+
+
+async def test_a_failed_start_is_retried_by_home_assistant_and_leaves_nothing_running(hass, air_conditioner,
+                                                                                      monkeypatch):
+    from conftest import StubDaemon
+
+    from custom_components.rusthinq.client import ManagementClient
+
+    real_start = ManagementClient.start
+    calls = []
+
+    async def failing_once(self):
+        calls.append(self)
+        if len(calls) == 1:
+            raise RuntimeError("boom")
+        await real_start(self)
+
+    stopped = []
+
+    async def counting_stop(self):
+        stopped.append(self)
+
+    monkeypatch.setattr(ManagementClient, "start", failing_once)
+    monkeypatch.setattr(StubDaemon, "async_stop", counting_stop)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
+    entry.add_to_hass(hass)
+    assert not await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert not entry_platforms(hass, entry) and len(stopped) == 1
+
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=60))
+    await eventually(hass, lambda: entry.state is ConfigEntryState.LOADED)
+    assert len(calls) == 2
+    await eventually(hass, lambda: climate_entity(hass) and hass.states.get(climate_entity(hass)).state
+                     != STATE_UNAVAILABLE)
+
+
+async def test_stopping_home_assistant_stops_the_client_before_the_daemon(hass, air_conditioner, monkeypatch, caplog):
+    """Home Assistant does not unload entries when it stops, and closes its HTTP session right after: a client still
+    running would try the stopped daemon again on that closed session."""
+    from conftest import StubDaemon
+
+    entry = await setup(hass)
+    client = entry.runtime_data.client
+    await eventually(hass, lambda: client.connected.is_set())
+    order = []
+
+    async def daemon_stop(self):
+        order.append(("daemon", client._runner is None))
+
+    monkeypatch.setattr(StubDaemon, "async_stop", daemon_stop)
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
+    await hass.async_block_till_done()
+    assert order == [("daemon", True)]
+    assert "failed unexpectedly" not in caplog.text
 
 
 async def test_the_config_flow_offers_no_connection_to_a_running_rusthinq(hass):
