@@ -22,9 +22,9 @@ from pathlib import Path
 import aiohttp
 
 REPOSITORY = "3735943886/rusthinq-scripts"
-RELEASE = "2026.11.22"
+RELEASE = "2026.11.25"
 """The pinned dated release of rusthinq-scripts; move it together with `COMMIT`."""
-COMMIT = "d1d8680c19b10093b5f63652b08cc48b777c430f"
+COMMIT = "89712e52d3c3569ac805cb28df31995508c5c384"
 """The commit `RELEASE` tags. Downloads are by commit, so a moved tag cannot change what is installed."""
 DOWNLOAD_TIMEOUT = aiohttp.ClientTimeout(total=120)
 
