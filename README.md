@@ -10,8 +10,8 @@ instead of LG's cloud, and their drivers' output becomes Home Assistant devices 
 ## Requirements
 
 - Home Assistant 2025.1.3 or later.
-- LG appliances must be able to reach this Home Assistant host on TCP 443 (or an alternative port via router DNAT;
-  see [Ports](#ports)).
+- LG appliances must be able to reach this Home Assistant host on TCP 443 and 8883 (or alternative ports via router
+  DNAT; see [Ports](#ports)).
 - For new installations, see [Connecting appliances](#connecting-appliances). Appliances already provisioned for an
   existing rusthinq can keep their CA and device setup when you [move the installation](#moving-an-existing-installation).
 
@@ -39,7 +39,7 @@ state, then creates a new CA; appliances may need provisioning again. Downloaded
 | Listener | Default | Notes |
 |---|---|---|
 | HTTPS | 443 | Appliances always open 443; fixed by their firmware. |
-| MQTT | 8883 | Announced to appliances when they register; any free port works. The Mosquitto add-on also uses 8883 for TLS, so pick another if it runs. |
+| MQTT | 8883 | Appliances already registered with LG open 8883; if another port is used here, redirect 8883 to it. Appliances that register through rusthinq are told this port. The Mosquitto add-on also uses 8883 for TLS, so pick another if it runs. |
 | ThinQ1 HTTPS / ThinQ1 | 46030 / 47878 | Older ThinQ1 appliances. |
 | Management API | random, 127.0.0.1 only | Used by this integration; nothing to configure. |
 
@@ -57,8 +57,10 @@ the listener port.
 ## Connecting appliances
 
 Appliances already registered in the official LG ThinQ app do not need a factory reset or re-provisioning.
-Connecting them requires routing their outbound TCP 443 traffic to this Home Assistant host (default port 443, or
-another port like 8443 if 443 is taken).
+Connecting them requires routing their outbound TCP 443 and 8883 traffic to this Home Assistant host: 443 to the
+HTTPS port (default 443, or another port like 8443 if 443 is taken) and 8883 to the MQTT port (default 8883, or
+another port if the Mosquitto add-on holds 8883). Match the destination ports the appliances use, 443 and 8883, and
+translate them to rusthinq's ports; a rule on rusthinq's own port (such as 8885) never matches.
 
 1. **Network connectivity**:
    New appliances are first set up in the official LG ThinQ app to join the Wi-Fi network and obtain a DHCP lease
@@ -66,16 +68,18 @@ another port like 8443 if 443 is taken).
 2. **Route appliance traffic (leave DNS untouched)**:
    In order of preference:
    - **Router / Gateway DNAT** (Recommended; standard for Home Assistant OS and IoT VLANs):
-     Forward port 443 from appliance IP addresses to Home Assistant (see [Router configuration examples](docs/routers.md)):
-     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j DNAT --to-destination <ha_ip>:<port>`
-     (or with an ipset: `iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 443 -j DNAT --to-destination <ha_ip>:<port>`)
+     Forward ports 443 and 8883 from appliance IP addresses to Home Assistant (see [Router configuration examples](docs/routers.md)):
+     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j DNAT --to-destination <ha_ip>:<https_port>`
+     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 8883 -j DNAT --to-destination <ha_ip>:<mqtt_port>`
+     (or with an ipset: `-m set --match-set lg_appliances src` in place of `-m iprange --src-range <appliance_ips>`)
    - **Host firewall** (Home Assistant Container, Supervised, Core on a custom Linux host):
-     Redirect 443 locally for appliance source addresses:
-     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j REDIRECT --to-ports <port>`
-     (or with an ipset: `iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 443 -j REDIRECT --to-ports <port>`)
+     Redirect 443 and 8883 locally for appliance source addresses:
+     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j REDIRECT --to-ports <https_port>`
+     `iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 8883 -j REDIRECT --to-ports <mqtt_port>`
+     (or with an ipset: `-m set --match-set lg_appliances src` in place of `-m iprange --src-range <appliance_ips>`)
    - **TLS passthrough proxy on 443** (nginx `stream` with `ssl_preread`, HAProxy, Traefik `HostSNI`):
      Send LG hostnames and connections without SNI to rusthinq unterminated. Some appliances send no SNI. Proxies
-     terminating TLS do not work.
+     terminating TLS do not work. 8883 still needs one of the redirects above.
 3. **Reconnect the appliance**:
    Power-cycle the appliance or disconnect/reconnect it from Wi-Fi so it drops the existing LG session and reconnects
    through the new route. Alternatively, clear active router connection tracking with

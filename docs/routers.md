@@ -1,11 +1,17 @@
 # Router Configuration Guides
 
-This document collects platform-specific configurations for routing outbound LG appliance traffic (TCP port 443)
+This document collects platform-specific configurations for routing outbound LG appliance traffic (TCP ports 443 and 8883)
 to Home Assistant.
 
 ## Overview
 
-To allow rusthinq to receive appliance traffic without modifying appliance firmware or re-provisioning, your router or gateway must intercept outbound TCP port 443 traffic from the appliances and forward it to the Home Assistant host IP and its configured listener port (default `443`, or an alternative port like `8443`).
+To allow rusthinq to receive appliance traffic without modifying appliance firmware or re-provisioning, your router or gateway must intercept outbound TCP traffic from the appliances to two ports and forward it to the Home Assistant host IP:
+
+- port 443 to rusthinq's HTTPS port (default `443`, or an alternative port like `8443`);
+- port 8883 to rusthinq's MQTT port (default `8883`, or another port if the Mosquitto add-on holds 8883).
+
+Appliances already registered with LG open MQTT on 8883 whatever port rusthinq listens on, so the rule must match
+destination port 8883 and translate it. A rule that matches rusthinq's own MQTT port (for example 8885) never matches.
 
 ---
 
@@ -16,15 +22,15 @@ For generic Linux-based routers or gateways:
 ### iptables
 ```bash
 # Using IP range
-iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j DNAT --to-destination <ha_ip>:<port>
-iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 8883 -j DNAT --to-destination <ha_ip>:<port>
+iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 443 -j DNAT --to-destination <ha_ip>:<https_port>
+iptables -t nat -A PREROUTING -p tcp -m iprange --src-range <appliance_ips> --dport 8883 -j DNAT --to-destination <ha_ip>:<mqtt_port>
 
 # Using ipset
 ipset create lg_appliances hash:ip
 ipset add lg_appliances <appliance_1_ip>
 ipset add lg_appliances <appliance_2_ip>
-iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 443 -j DNAT --to-destination <ha_ip>:<port>
-iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 8883 -j DNAT --to-destination <ha_ip>:<port>
+iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 443 -j DNAT --to-destination <ha_ip>:<https_port>
+iptables -t nat -A PREROUTING -p tcp -m set --match-set lg_appliances src --dport 8883 -j DNAT --to-destination <ha_ip>:<mqtt_port>
 ```
 
 ---
@@ -57,14 +63,14 @@ server:
   post_up: >-
     iptables -A FORWARD -i %i -j ACCEPT;
     iptables -A FORWARD -o %i -j ACCEPT;
-    iptables -t nat -A PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<port>;
-    iptables -t nat -A PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:8883;
+    iptables -t nat -A PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<https_port>;
+    iptables -t nat -A PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:<mqtt_port>;
     iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE;
   post_down: >-
     iptables -D FORWARD -i %i -j ACCEPT;
     iptables -D FORWARD -o %i -j ACCEPT;
-    iptables -t nat -D PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<port>;
-    iptables -t nat -D PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:8883;
+    iptables -t nat -D PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<https_port>;
+    iptables -t nat -D PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:<mqtt_port>;
     iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE;
 peers:
   - name: iptime
@@ -74,7 +80,7 @@ peers:
     client_allowed_ips:
       - 0.0.0.0/0
 ```
-*(Replace `<ha_lan_ip>` with your Home Assistant's local IP, and `<port>` with rusthinq's HTTPS port like `8443` or `443`).*
+*(Replace `<ha_lan_ip>` with your Home Assistant's local IP, `<https_port>` with rusthinq's HTTPS port like `8443` or `443`, and `<mqtt_port>` with its MQTT port like `8883`).*
 
 Start the add-on. The generated client configuration for `iptime` (including its private key, server public key, and pre-shared key if generated) can be retrieved from the add-on log or under `/ssl/wireguard/iptime/`.
 
@@ -92,14 +98,14 @@ PrivateKey = <Server_Private_Key>
 PostUp = sysctl -w net.ipv4.ip_forward=1
 PostUp = iptables -A FORWARD -i %i -j ACCEPT
 PostUp = iptables -A FORWARD -o %i -j ACCEPT
-PostUp = iptables -t nat -A PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<port>
-PostUp = iptables -t nat -A PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:8883
+PostUp = iptables -t nat -A PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<https_port>
+PostUp = iptables -t nat -A PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:<mqtt_port>
 PostUp = iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 
 PostDown = iptables -D FORWARD -i %i -j ACCEPT
 PostDown = iptables -D FORWARD -o %i -j ACCEPT
-PostDown = iptables -t nat -D PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<port>
-PostDown = iptables -t nat -D PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:8883
+PostDown = iptables -t nat -D PREROUTING -i %i -p tcp --dport 443 -j DNAT --to-destination <ha_lan_ip>:<https_port>
+PostDown = iptables -t nat -D PREROUTING -i %i -p tcp --dport 8883 -j DNAT --to-destination <ha_lan_ip>:<mqtt_port>
 PostDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
 
 [Peer]
@@ -108,7 +114,7 @@ PublicKey = <ipTIME_Client_Public_Key>
 AllowedIPs = 10.10.10.2/32
 ```
 
-*(Replace `eth0` with your server's primary network interface, and `<ha_lan_ip>:<port>` with the Home Assistant host IP and rusthinq listener port).*
+*(Replace `eth0` with your server's primary network interface, `<ha_lan_ip>` with the Home Assistant host IP, and `<https_port>`/`<mqtt_port>` with rusthinq's HTTPS and MQTT ports).*
 
 ### 2. ipTIME WireGuard Client Setup
 
