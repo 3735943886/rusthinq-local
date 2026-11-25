@@ -17,7 +17,7 @@
   "issue_tracker": "https://github.com/3735943886/rusthinq-local/issues",
   "requirements": [
     "ildevice-homeassistant==0.2.1",
-    "rusthinq==0.2.4"
+    "rusthinq==0.2.5"
   ],
-  "version": "0.1.5"
+  "version": "0.1.6rc1"
 }
