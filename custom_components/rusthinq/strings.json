@@ -17,7 +17,7 @@
         },
         "data_description": {
           "https_port": "Where appliances are provisioned and register (443 unless a redirect points here)",
-          "mqtt_port": "Appliances already registered with LG open 8883; redirect 8883 to this port if it differs. Appliances that register through rusthinq are told it"
+          "mqtt_port": "Appliances open 8883, and rusthinq tells them 8883 whatever port this is; redirect 8883 to this port if it differs"
         }
       },
       "migrate": {
@@ -64,7 +64,7 @@
         },
         "data_description": {
           "https_port": "Where appliances are provisioned and register (443 unless a redirect points here)",
-          "mqtt_port": "Appliances already registered with LG open 8883; redirect 8883 to this port if it differs. Appliances that register through rusthinq are told it"
+          "mqtt_port": "Appliances open 8883, and rusthinq tells them 8883 whatever port this is; redirect 8883 to this port if it differs"
         }
       }
     },
