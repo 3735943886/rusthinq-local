@@ -10,14 +10,14 @@
       },
       "embedded": {
         "title": "Run rusthinq in Home Assistant",
-        "description": "Home Assistant downloads and runs the rusthinq daemon, which LG ThinQ appliances connect to on this host. Appliances open HTTPS on port 443; if another port is used here, redirect 443 to it.",
+        "description": "Home Assistant downloads and runs the rusthinq daemon, which LG ThinQ appliances connect to on this host. Appliances open HTTPS on port 443, and appliances already registered with LG open MQTT on 8883. If a port here differs, redirect 443 or 8883 to it.",
         "data": {
           "https_port": "HTTPS port",
           "mqtt_port": "MQTT port"
         },
         "data_description": {
           "https_port": "Where appliances are provisioned and register (443 unless a redirect points here)",
-          "mqtt_port": "Announced to appliances when they register; any free port works"
+          "mqtt_port": "Appliances already registered with LG open 8883; redirect 8883 to this port if it differs. Appliances that register through rusthinq are told it"
         }
       },
       "migrate": {
@@ -64,7 +64,7 @@
         },
         "data_description": {
           "https_port": "Where appliances are provisioned and register (443 unless a redirect points here)",
-          "mqtt_port": "Announced to appliances when they register; any free port works"
+          "mqtt_port": "Appliances already registered with LG open 8883; redirect 8883 to this port if it differs. Appliances that register through rusthinq are told it"
         }
       }
     },
@@ -86,7 +86,7 @@
   "issues": {
     "ports_unavailable": {
       "title": "rusthinq cannot open its ports",
-      "description": "The built-in rusthinq cannot start: {problems}.\n\nFree the port, or choose other ports by removing the integration and adding it again (the CA and devices stay in /config/rusthinq, so nothing is lost). Appliances always open HTTPS on 443; if rusthinq listens elsewhere, redirect 443 to it. rusthinq keeps retrying on its own."
+      "description": "The built-in rusthinq cannot start: {problems}.\n\nFree the port, or choose other ports by removing the integration and adding it again (the CA and devices stay in /config/rusthinq, so nothing is lost). Appliances always open HTTPS on 443, and appliances already registered with LG open MQTT on 8883; if rusthinq listens elsewhere, redirect those ports to it. rusthinq keeps retrying on its own."
     }
   },
   "options": {
