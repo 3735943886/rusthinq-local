@@ -34,3 +34,15 @@ def test_translation_keys_and_placeholders(path: Path):
     placeholder = re.compile(r"\{(\w+)\}")
     for key, text in source.items():
         assert set(placeholder.findall(translated[key])) == set(placeholder.findall(text)), key
+
+
+@pytest.mark.parametrize("path", [COMPONENT / "strings.json", *TRANSLATIONS], ids=lambda p: p.name)
+def test_no_key_appears_twice(path: Path):
+    """A key given twice loads as its last value, dropping the first; a line merge of two branches that both add an
+    `entity.<platform>` makes one."""
+    def unique(pairs):
+        keys = [key for key, _ in pairs]
+        assert len(keys) == len(set(keys)), sorted({key for key in keys if keys.count(key) > 1})
+        return dict(pairs)
+
+    json.loads(path.read_text(), object_pairs_hook=unique)
