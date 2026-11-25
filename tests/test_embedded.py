@@ -190,3 +190,10 @@ async def test_config_flow_checks_ports_and_allows_one_embedded_entry(hass, conf
     menu = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     again = await hass.config_entries.flow.async_configure(menu["flow_id"], {"next_step_id": MODE_EMBEDDED})
     assert again["type"] == "abort" and again["reason"] == "already_configured"
+
+
+def test_an_mqtt_port_other_than_8883_is_advertised_as_8883():
+    common = {"https_port": 443, "thinq1_https_port": 46030, "thinq1_port": 47878, "prefix": "rusthinq",
+              "management_port": 40000, "user": "u", "password": "p"}
+    assert "mqtt_advertise = 8883" in embedded.render_config(mqtt_port=8885, **common)
+    assert "mqtt_advertise" not in embedded.render_config(mqtt_port=8883, **common)

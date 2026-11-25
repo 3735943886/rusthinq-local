@@ -39,7 +39,7 @@ state, then creates a new CA; appliances may need provisioning again. Downloaded
 | Listener | Default | Notes |
 |---|---|---|
 | HTTPS | 443 | Appliances always open 443; fixed by their firmware. |
-| MQTT | 8883 | Appliances already registered with LG open 8883; if another port is used here, redirect 8883 to it. Appliances that register through rusthinq are told this port. The Mosquitto add-on also uses 8883 for TLS, so pick another if it runs. |
+| MQTT | 8883 | Appliances open 8883: those registered with LG already use it, and rusthinq tells appliances 8883 whatever port it listens on. If another port is used here, redirect 8883 to it. The Mosquitto add-on also uses 8883 for TLS, so pick another if it runs. |
 | ThinQ1 HTTPS / ThinQ1 | 46030 / 47878 | Older ThinQ1 appliances. |
 | Management API | random, 127.0.0.1 only | Used by this integration; nothing to configure. |
 

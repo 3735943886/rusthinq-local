@@ -139,6 +139,10 @@ def render_config(*, https_port: int, mqtt_port: int, thinq1_https_port: int, th
         f"advertise_requested_host = {_toml(settings['advertise_requested_host'])}",
         # Appliances reach HTTPS on 443 whatever port it is bound to (a redirect in front of it, as on r5c).
         *(["https_advertise = 443"] if https_port not in (0, 443) else []),
+        # The same for MQTT: `/route` then names 8883, the port appliances registered with LG already open, so one
+        # redirect of 8883 covers both a reconnect to the stored LG address and the address `/route` hands out, and
+        # removing the redirect leaves no rusthinq-only port stored on the appliance.
+        *(["mqtt_advertise = 8883"] if mqtt_port not in (0, 8883) else []),
         'cloud_account = "cloud-account-v2.json"',
         f"bridge_dns = {_toml(settings['bridge_dns'])}",
         "",
