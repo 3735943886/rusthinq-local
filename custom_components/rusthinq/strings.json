@@ -519,6 +519,38 @@
           }
         }
       }
+    },
+    "binary_sensor": {
+      "status_local_connection": {
+        "name": "Local connection"
+      },
+      "status_lg_bridge": {
+        "name": "LG bridge"
+      },
+      "status_driver": {
+        "name": "Driver"
+      },
+      "status_lg_account": {
+        "name": "LG account"
+      }
+    },
+    "sensor": {
+      "status_firmware": {
+        "name": "Firmware"
+      }
+    },
+    "switch": {
+      "status_lg_bridge": {
+        "name": "LG bridge"
+      }
+    },
+    "button": {
+      "status_pair": {
+        "name": "Pair with LG"
+      },
+      "status_unpair": {
+        "name": "Unpair from LG"
+      }
     }
   },
   "exceptions": {

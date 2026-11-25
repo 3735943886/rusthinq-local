@@ -151,7 +151,7 @@ class StatusEntity(Entity):
 
 class LocalConnection(StatusEntity, BinarySensorEntity):
     key = "local"
-    _attr_name = "Local connection"
+    _attr_translation_key = "status_local_connection"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     @property
@@ -165,7 +165,7 @@ class LocalConnection(StatusEntity, BinarySensorEntity):
 
 class Bridge(StatusEntity, BinarySensorEntity):
     key = "bridge"
-    _attr_name = "LG bridge"
+    _attr_translation_key = "status_lg_bridge"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
 
     @property
@@ -183,7 +183,7 @@ class Driver(StatusEntity, BinarySensorEntity):
     """A problem when the driver failed, or when the device is online without one."""
 
     key = "driver"
-    _attr_name = "Driver"
+    _attr_translation_key = "status_driver"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     @property
@@ -199,7 +199,7 @@ class Driver(StatusEntity, BinarySensorEntity):
 
 class Firmware(StatusEntity, SensorEntity):
     key = "firmware"
-    _attr_name = "Firmware"
+    _attr_translation_key = "status_firmware"
 
     @property
     def native_value(self) -> str | None:
@@ -211,7 +211,7 @@ class Account(BinarySensorEntity):
 
     _attr_has_entity_name = True
     _attr_should_poll = False
-    _attr_name = "LG account"
+    _attr_translation_key = "status_lg_account"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, status: DeviceStatus) -> None:
@@ -242,7 +242,7 @@ class BridgeSwitch(StatusEntity, SwitchEntity):
     """Whether rusthinq keeps this device's LG bridge connected (enable/disable); only for a paired device."""
 
     key = "bridge-enabled"
-    _attr_name = "LG bridge"
+    _attr_translation_key = "status_lg_bridge"
     _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:cloud-sync"
 
@@ -270,7 +270,7 @@ class BridgeButton(StatusEntity, ButtonEntity):
     def __init__(self, status: DeviceStatus, device: str, action: str) -> None:
         self.key = f"bridge-{action}"
         self._action = action
-        self._attr_name = "Pair with LG" if action == "pair" else "Unpair from LG"
+        self._attr_translation_key = f"status_{action}"
         self._attr_icon = "mdi:cloud-plus" if action == "pair" else "mdi:cloud-remove"
         super().__init__(status, device)
 

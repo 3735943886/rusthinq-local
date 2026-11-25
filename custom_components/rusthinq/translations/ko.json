@@ -519,6 +519,38 @@
           }
         }
       }
+    },
+    "binary_sensor": {
+      "status_local_connection": {
+        "name": "로컬 연결"
+      },
+      "status_lg_bridge": {
+        "name": "LG 브리지"
+      },
+      "status_driver": {
+        "name": "드라이버"
+      },
+      "status_lg_account": {
+        "name": "LG 계정"
+      }
+    },
+    "sensor": {
+      "status_firmware": {
+        "name": "펌웨어"
+      }
+    },
+    "switch": {
+      "status_lg_bridge": {
+        "name": "LG 브리지"
+      }
+    },
+    "button": {
+      "status_pair": {
+        "name": "LG에 등록"
+      },
+      "status_unpair": {
+        "name": "LG 등록 해제"
+      }
     }
   },
   "exceptions": {
