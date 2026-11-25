@@ -219,6 +219,9 @@
       },
       "off_timer": {
         "name": "꺼짐 예약"
+      },
+      "sleep_timer": {
+        "name": "취침 타이머"
       }
     },
     "select": {
@@ -295,6 +298,32 @@
           "medium": "중",
           "high": "강",
           "turbo": "터보"
+        }
+      },
+      "auto_dry": {
+        "name": "자동 건조",
+        "state": {
+          "off": "꺼짐",
+          "10min": "10분",
+          "30min": "30분",
+          "60min": "60분",
+          "smart": "스마트"
+        }
+      },
+      "display": {
+        "name": "디스플레이",
+        "state": {
+          "off": "꺼짐"
+        }
+      },
+      "wind_mode": {
+        "name": "바람 모드",
+        "state": {
+          "off": "꺼짐",
+          "manner": "매너",
+          "long_power": "롱파워",
+          "study": "스터디",
+          "auto_temp": "자동 온도"
         }
       }
     },
@@ -414,6 +443,30 @@
       },
       "error": {
         "name": "오류"
+      },
+      "auto_dry_remaining": {
+        "name": "자동 건조 남은 시간"
+      },
+      "filter_life": {
+        "name": "필터 수명"
+      },
+      "filter_remaining": {
+        "name": "필터 잔여량"
+      },
+      "filter_used": {
+        "name": "필터 사용 시간"
+      },
+      "power_draw": {
+        "name": "소비 전력"
+      },
+      "pm1": {
+        "name": "PM1"
+      },
+      "pm2_5": {
+        "name": "PM2.5"
+      },
+      "pm10": {
+        "name": "PM10"
       }
     },
     "switch": {
@@ -428,6 +481,15 @@
       },
       "bucket_light": {
         "name": "물통 조명"
+      },
+      "comfort_saving": {
+        "name": "쾌적 절전"
+      },
+      "energy_save": {
+        "name": "에너지 절약"
+      },
+      "air_purify": {
+        "name": "공기 정화"
       }
     },
     "humidifier": {
@@ -439,6 +501,22 @@
               "silent": "정음",
               "intensive": "스팟",
               "quick": "쾌속"
+            }
+          }
+        }
+      }
+    },
+    "climate": {
+      "climate": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "자동",
+              "very_low": "미풍",
+              "low": "약",
+              "medium": "중",
+              "high": "강",
+              "power": "터보"
             }
           }
         }
