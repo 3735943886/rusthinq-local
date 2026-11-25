@@ -221,7 +221,7 @@
         "name": "꺼짐 예약"
       },
       "sleep_timer": {
-        "name": "취침 타이머"
+        "name": "취침예약"
       }
     },
     "select": {
@@ -229,32 +229,32 @@
         "name": "코스 선택",
         "state": {
           "none": "없음",
-          "styling_standard": "스타일링 표준",
-          "styling_quick": "스타일링 쾌속",
-          "styling_intensive": "스타일링 강력",
+          "styling_standard": "표준 스타일링",
+          "styling_quick": "급속 스타일링",
+          "styling_intensive": "강력 스타일링",
           "wool_knit": "울/니트",
           "suit_coat": "정장/코트",
-          "functionality": "기능성 의류",
+          "functionality": "기능성",
           "downloaded_course": "다운로드 코스",
-          "sterilize_standard": "살균 표준",
-          "bedding_sterilize": "침구 살균",
-          "baby_clothing_sanitary": "유아복 살균",
+          "sterilize_standard": "표준 살균",
+          "bedding_sterilize": "침구/베개 살균",
+          "baby_clothing_sanitary": "아기옷 살균",
           "doll_sanitary": "인형 살균",
-          "auto_dry": "자동 건조",
-          "wool_delicate_dry": "울/섬세 건조",
+          "auto_dry": "AI 건조",
+          "wool_delicate_dry": "섬세 저온 건조",
           "timed_dry_30": "시간 건조 30분",
           "timed_dry_60": "시간 건조 60분",
           "timed_dry_90": "시간 건조 90분",
           "timed_dry_120": "시간 건조 120분",
-          "uniform_management": "교복 관리",
-          "padding_care": "패딩 케어",
-          "fine_dust": "미세먼지",
-          "virus": "바이러스 케어",
-          "jeans_care": "청바지 케어",
-          "fur_leather_care": "모피/가죽 케어",
+          "uniform_management": "교복 스타일링",
+          "padding_care": "패딩 스타일링",
+          "fine_dust": "미세먼지 스타일링",
+          "virus": "바이러스 살균",
+          "jeans_care": "청바지 스타일링",
+          "fur_leather_care": "모피/가죽 스타일링",
           "suit_uniform_sterilize": "정장/교복 살균",
-          "silent": "저소음",
-          "fur_leather": "모피/가죽"
+          "silent": "조용조용 스타일링",
+          "fur_leather": "모피/가죽 관리"
         }
       },
       "smart_course_select": {
@@ -262,31 +262,31 @@
         "state": {
           "none": "없음",
           "panel_course": "패널 코스",
-          "suits_uniforms": "정장/교복",
-          "scarves": "스카프",
-          "pants": "바지",
-          "silent": "저소음",
+          "suits_uniforms": "정장/교복 살균",
+          "scarves": "목도리 스타일링",
+          "pants": "바지관리",
+          "silent": "조용조용 스타일링",
           "coat_warmer": "외투 데우기",
           "static_removal": "정전기 제거",
-          "stored_items": "보관 의류",
-          "blanket_warmer": "이불 데우기",
-          "dress_shirts": "와이셔츠",
+          "stored_items": "보관 스타일링",
+          "blanket_warmer": "담요 데우기",
+          "dress_shirts": "셔츠 한 벌 건조",
           "snow_raing_drying": "눈/비 건조",
-          "fur_leather": "모피/가죽",
+          "fur_leather": "모피/가죽 관리",
           "jeans_management": "청바지 관리",
-          "baby_clothing_sanitary": "유아복 살균",
+          "baby_clothing_sanitary": "아기옷 살균",
           "doll_sanitary": "인형 살균",
-          "wool_delicate_dry": "울/섬세 건조",
-          "rainy_days": "장마철 관리",
-          "uniform": "교복",
+          "wool_delicate_dry": "섬세 저온 건조",
+          "rainy_days": "장마철 빨래 건조",
+          "uniform": "교복 스타일링",
           "padding_management": "패딩 관리",
           "thin_padding_management": "얇은 패딩 관리",
           "thick_padding_management": "두꺼운 패딩 관리",
-          "silk_care": "실크 케어",
-          "athleisure_refresh": "애슬레저 리프레시",
-          "athleisure_dry": "애슬레저 건조",
+          "silk_care": "실크 스타일링",
+          "athleisure_refresh": "요가복 스타일링",
+          "athleisure_dry": "요가복 건조",
           "swimsuit_dry": "수영복 건조",
-          "golf_wear_care": "골프웨어 케어",
+          "golf_wear_care": "골프웨어 스타일링",
           "golf_wear_dry": "골프웨어 건조"
         }
       },
@@ -294,36 +294,36 @@
         "name": "풍량",
         "state": {
           "auto": "자동",
-          "low": "약",
-          "medium": "중",
-          "high": "강",
-          "turbo": "터보"
+          "low": "약풍",
+          "medium": "중풍",
+          "high": "강풍",
+          "turbo": "파워풍"
         }
       },
       "auto_dry": {
         "name": "자동 건조",
         "state": {
-          "off": "꺼짐",
+          "off": "사용 안 함",
           "10min": "10분",
           "30min": "30분",
           "60min": "60분",
-          "smart": "스마트"
+          "smart": "AI건조"
         }
       },
       "display": {
-        "name": "디스플레이",
+        "name": "표시창 밝기",
         "state": {
           "off": "꺼짐"
         }
       },
       "wind_mode": {
-        "name": "바람 모드",
+        "name": "공간맞춤바람",
         "state": {
           "off": "꺼짐",
-          "manner": "매너",
-          "long_power": "롱파워",
-          "study": "스터디",
-          "auto_temp": "자동 온도"
+          "manner": "매너바람",
+          "long_power": "롱파워바람",
+          "study": "스터디바람",
+          "auto_temp": "자동온도바람"
         }
       }
     },
@@ -342,7 +342,7 @@
           "reserved": "예약 중",
           "power_save_running": "절전 운전 중",
           "steam_preparing": "스팀 준비 중",
-          "refreshing": "리프레시 중",
+          "refreshing": "스타일링 중",
           "drying": "건조 중",
           "sterilizing": "살균 중"
         }
@@ -351,32 +351,32 @@
         "name": "코스",
         "state": {
           "none": "없음",
-          "styling_standard": "스타일링 표준",
-          "styling_quick": "스타일링 쾌속",
-          "styling_intensive": "스타일링 강력",
+          "styling_standard": "표준 스타일링",
+          "styling_quick": "급속 스타일링",
+          "styling_intensive": "강력 스타일링",
           "wool_knit": "울/니트",
           "suit_coat": "정장/코트",
-          "functionality": "기능성 의류",
+          "functionality": "기능성",
           "downloaded_course": "다운로드 코스",
-          "sterilize_standard": "살균 표준",
-          "bedding_sterilize": "침구 살균",
-          "baby_clothing_sanitary": "유아복 살균",
+          "sterilize_standard": "표준 살균",
+          "bedding_sterilize": "침구/베개 살균",
+          "baby_clothing_sanitary": "아기옷 살균",
           "doll_sanitary": "인형 살균",
-          "auto_dry": "자동 건조",
-          "wool_delicate_dry": "울/섬세 건조",
+          "auto_dry": "AI 건조",
+          "wool_delicate_dry": "섬세 저온 건조",
           "timed_dry_30": "시간 건조 30분",
           "timed_dry_60": "시간 건조 60분",
           "timed_dry_90": "시간 건조 90분",
           "timed_dry_120": "시간 건조 120분",
-          "uniform_management": "교복 관리",
-          "padding_care": "패딩 케어",
-          "fine_dust": "미세먼지",
-          "virus": "바이러스 케어",
-          "jeans_care": "청바지 케어",
-          "fur_leather_care": "모피/가죽 케어",
+          "uniform_management": "교복 스타일링",
+          "padding_care": "패딩 스타일링",
+          "fine_dust": "미세먼지 스타일링",
+          "virus": "바이러스 살균",
+          "jeans_care": "청바지 스타일링",
+          "fur_leather_care": "모피/가죽 스타일링",
           "suit_uniform_sterilize": "정장/교복 살균",
-          "silent": "저소음",
-          "fur_leather": "모피/가죽"
+          "silent": "조용조용 스타일링",
+          "fur_leather": "모피/가죽 관리"
         }
       },
       "smart_course": {
@@ -384,31 +384,31 @@
         "state": {
           "none": "없음",
           "panel_course": "패널 코스",
-          "suits_uniforms": "정장/교복",
-          "scarves": "스카프",
-          "pants": "바지",
-          "silent": "저소음",
+          "suits_uniforms": "정장/교복 살균",
+          "scarves": "목도리 스타일링",
+          "pants": "바지관리",
+          "silent": "조용조용 스타일링",
           "coat_warmer": "외투 데우기",
           "static_removal": "정전기 제거",
-          "stored_items": "보관 의류",
-          "blanket_warmer": "이불 데우기",
-          "dress_shirts": "와이셔츠",
+          "stored_items": "보관 스타일링",
+          "blanket_warmer": "담요 데우기",
+          "dress_shirts": "셔츠 한 벌 건조",
           "snow_raing_drying": "눈/비 건조",
-          "fur_leather": "모피/가죽",
+          "fur_leather": "모피/가죽 관리",
           "jeans_management": "청바지 관리",
-          "baby_clothing_sanitary": "유아복 살균",
+          "baby_clothing_sanitary": "아기옷 살균",
           "doll_sanitary": "인형 살균",
-          "wool_delicate_dry": "울/섬세 건조",
-          "rainy_days": "장마철 관리",
-          "uniform": "교복",
+          "wool_delicate_dry": "섬세 저온 건조",
+          "rainy_days": "장마철 빨래 건조",
+          "uniform": "교복 스타일링",
           "padding_management": "패딩 관리",
           "thin_padding_management": "얇은 패딩 관리",
           "thick_padding_management": "두꺼운 패딩 관리",
-          "silk_care": "실크 케어",
-          "athleisure_refresh": "애슬레저 리프레시",
-          "athleisure_dry": "애슬레저 건조",
+          "silk_care": "실크 스타일링",
+          "athleisure_refresh": "요가복 스타일링",
+          "athleisure_dry": "요가복 건조",
           "swimsuit_dry": "수영복 건조",
-          "golf_wear_care": "골프웨어 케어",
+          "golf_wear_care": "골프웨어 스타일링",
           "golf_wear_dry": "골프웨어 건조"
         }
       },
@@ -483,13 +483,13 @@
         "name": "물통 조명"
       },
       "comfort_saving": {
-        "name": "쾌적 절전"
+        "name": "쾌적절전"
       },
       "energy_save": {
-        "name": "에너지 절약"
+        "name": "절전"
       },
       "air_purify": {
-        "name": "공기 정화"
+        "name": "공기청정"
       }
     },
     "humidifier": {
@@ -497,10 +497,10 @@
         "state_attributes": {
           "mode": {
             "state": {
-              "smart_plus": "스마트+",
-              "silent": "정음",
-              "intensive": "스팟",
-              "quick": "쾌속"
+              "smart_plus": "스마트 제습",
+              "silent": "저소음 제습",
+              "intensive": "집중건조",
+              "quick": "쾌속 제습"
             }
           }
         }
@@ -513,10 +513,10 @@
             "state": {
               "auto": "자동",
               "very_low": "미풍",
-              "low": "약",
-              "medium": "중",
-              "high": "강",
-              "power": "터보"
+              "low": "약풍",
+              "medium": "중풍",
+              "high": "강풍",
+              "power": "파워풍"
             }
           }
         }
