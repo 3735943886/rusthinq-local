@@ -80,13 +80,21 @@ translate them to rusthinq's ports; a rule on rusthinq's own port (such as 8885)
    - **TLS passthrough proxy on 443** (nginx `stream` with `ssl_preread`, HAProxy, Traefik `HostSNI`):
      Send LG hostnames and connections without SNI to rusthinq unterminated. Some appliances send no SNI. Proxies
      terminating TLS do not work. 8883 still needs one of the redirects above.
-3. **Reconnect the appliance**:
+3. **Let the redirected traffic through the firewall**:
+   A redirect only rewrites the destination; the router still filters the result as traffic from the appliances to
+   Home Assistant. Zone-based firewalls (UniFi Network zones, OPNsense or pfSense interface rules, an IoT VLAN with
+   inter-VLAN blocking) drop it unless a rule allows it: allow TCP from the appliances to `<ha_ip>` on
+   `<https_port>` and `<mqtt_port>`. Name rusthinq's ports here, not 443 and 8883, since filtering sees the
+   translated destination. When the appliances and Home Assistant share a subnet, also masquerade (SNAT) that
+   traffic at the router, so Home Assistant's replies go back through it instead of straight to the appliance.
+   A blocked redirect looks like an appliance that never shows up while the DNAT rules look right.
+4. **Reconnect the appliance**:
    Power-cycle the appliance or disconnect/reconnect it from Wi-Fi so it drops the existing LG session and reconnects
    through the new route. Alternatively, clear active router connection tracking with
    `conntrack -D -p tcp -s <appliance_ip>`.
-4. **Automatic discovery**:
+5. **Automatic discovery**:
    Once the appliance connects to rusthinq, Home Assistant automatically creates the corresponding device and entities.
-5. **Retain the official LG ThinQ app (Optional)**:
+6. **Retain the official LG ThinQ app (Optional)**:
    Sign in to the LG account under Settings → Devices & services → rusthinq → **Configure**. Then on the appliance's
    device page in Home Assistant, press **Pair with LG**. This starts the local LG cloud bridge, keeping the official
    mobile app operational alongside Home Assistant.
@@ -152,6 +160,11 @@ and the integration covers what the dashboard offers for everyday use.
 - A command that cannot be carried out (the appliance is offline, a value out of range…) fires the Home Assistant
   event `ildevice_command_rejected` with the property, a code and the reason, and is logged.
 - A setup that keeps retrying shows its reason on the integration card (a port in use, for example).
+- An appliance that never shows up after reconnecting: check, in this order, that the router's firewall allows the
+  appliances to reach `<https_port>` and `<mqtt_port>` on Home Assistant (step 3 of
+  [Connecting appliances](#connecting-appliances)), that the DNAT rules match destination ports 443 and 8883, and that
+  the appliance really reconnected. The daemon log (in *Download diagnostics*) names the server an appliance asked for
+  when rusthinq refused or relayed its connection.
 - If Home Assistant was killed, a daemon it left running is stopped on the next start.
 - *Download diagnostics* on the integration or on an appliance gives what to attach to an issue: rusthinq's own
   diagnostics, the devices as rusthinq lists them, the daemon's last log lines, and per appliance its descriptor and

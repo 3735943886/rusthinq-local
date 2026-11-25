@@ -13,6 +13,16 @@ To allow rusthinq to receive appliance traffic without modifying appliance firmw
 Appliances already registered with LG open MQTT on 8883 whatever port rusthinq listens on, so the rule must match
 destination port 8883 and translate it. A rule that matches rusthinq's own MQTT port (for example 8885) never matches.
 
+Two more things the router usually needs besides the DNAT rules:
+
+- **A firewall rule that allows the translated traffic.** Filtering sees the rewritten destination, so allow TCP from
+  the appliances to `<ha_ip>` on rusthinq's ports (`<https_port>`, `<mqtt_port>`), not on 443 and 8883. Zone-based
+  firewalls (UniFi Network zones, OPNsense or pfSense interface rules, IoT VLANs with inter-VLAN blocking) drop it
+  otherwise, and the appliance simply never shows up.
+- **A masquerade (SNAT) rule when the appliances and Home Assistant share a subnet.** Without it Home Assistant
+  answers the appliance directly, the appliance sees a reply from an address it never contacted, and the connection
+  fails. With it the daemon log shows the router as every appliance's peer address.
+
 ---
 
 ## Linux / iptables / nftables
