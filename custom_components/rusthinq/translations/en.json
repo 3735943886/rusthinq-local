@@ -142,6 +142,40 @@
       "backup": "[Open the backup page]({page}) to download a portable backup of rusthinq: the CA, the device records and the LG account. Only administrators can open it."
     }
   },
+  "entity": {
+    "event": {
+      "notification": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "styling_is_complete": "Styling is completed",
+              "error_has_occurred": "An error has occurred",
+              "water_is_full": "Water is full"
+            }
+          }
+        }
+      },
+      "error_event": {
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "need_water_drain": "Empty water",
+              "door_close_error": "Door closed error",
+              "temperature_sensor_error": "Thermistor error",
+              "water_leaks_error": "Water leakage problem",
+              "water_level_sensor_error": "Water sensor error",
+              "steam_heat_error": "Steam heater error",
+              "le_error": "LE error",
+              "le2_error": "LE2 error",
+              "door_open_error": "Door open",
+              "need_water_replenishment": "Fill water",
+              "unknown_error": "Product requires attention"
+            }
+          }
+        }
+      }
+    }
+  },
   "exceptions": {
     "not_connected": {
       "message": "rusthinq is not reachable right now; try again once it is."
