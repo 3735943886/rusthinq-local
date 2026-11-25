@@ -219,6 +219,9 @@
       },
       "off_timer": {
         "name": "Off timer"
+      },
+      "sleep_timer": {
+        "name": "Sleep timer"
       }
     },
     "select": {
@@ -295,6 +298,32 @@
           "medium": "Medium",
           "high": "High",
           "turbo": "Turbo"
+        }
+      },
+      "auto_dry": {
+        "name": "Auto dry",
+        "state": {
+          "off": "Off",
+          "10min": "10 min",
+          "30min": "30 min",
+          "60min": "60 min",
+          "smart": "Smart"
+        }
+      },
+      "display": {
+        "name": "Display",
+        "state": {
+          "off": "Off"
+        }
+      },
+      "wind_mode": {
+        "name": "Wind mode",
+        "state": {
+          "off": "Off",
+          "manner": "Manner",
+          "long_power": "Long power",
+          "study": "Study",
+          "auto_temp": "Auto temperature"
         }
       }
     },
@@ -414,6 +443,30 @@
       },
       "error": {
         "name": "Error"
+      },
+      "auto_dry_remaining": {
+        "name": "Auto dry remaining"
+      },
+      "filter_life": {
+        "name": "Filter life"
+      },
+      "filter_remaining": {
+        "name": "Filter remaining"
+      },
+      "filter_used": {
+        "name": "Filter used"
+      },
+      "power_draw": {
+        "name": "Power draw"
+      },
+      "pm1": {
+        "name": "Pm1"
+      },
+      "pm2_5": {
+        "name": "Pm2.5"
+      },
+      "pm10": {
+        "name": "Pm10"
       }
     },
     "switch": {
@@ -428,6 +481,15 @@
       },
       "bucket_light": {
         "name": "Bucket light"
+      },
+      "comfort_saving": {
+        "name": "Comfort saving"
+      },
+      "energy_save": {
+        "name": "Energy save"
+      },
+      "air_purify": {
+        "name": "Air purify"
       }
     },
     "humidifier": {
@@ -439,6 +501,22 @@
               "silent": "Silent",
               "intensive": "Intensive",
               "quick": "Quick"
+            }
+          }
+        }
+      }
+    },
+    "climate": {
+      "climate": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "very_low": "Very low",
+              "low": "Low",
+              "medium": "Medium",
+              "high": "High",
+              "power": "Power"
             }
           }
         }
