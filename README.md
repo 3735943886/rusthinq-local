@@ -28,6 +28,11 @@ it creates a CA and downloads the drivers: the [rusthinq-scripts](https://github
 release this version of the integration pins. Drivers change only with a new integration release. Everything lives in
 `/config/rusthinq/`, which Home Assistant backups include. `ca.key` and the LG account files are secrets.
 
+To try a driver of your own, or another model's driver for yours, put it at the top of the drivers directory as
+`/config/rusthinq/scripts/<model>.rhai`: rusthinq picks it before `drivers/<model>.rhai`. A driver update keeps files
+you added; it replaces only the files of the release itself, so an edit to one of those (`drivers/<model>.rhai` that
+the release ships) is lost.
+
 To download a portable backup, open Settings → Devices & services → rusthinq → **Configure** → **Download a backup**
 and follow the link to the backup page (administrators only; `/rusthinq-backup`). The browser saves the archive
 directly, as ZHA's network backup does. The archive contains the daemon configuration, CA, device ledger and LG account
@@ -166,6 +171,8 @@ and the integration covers what the dashboard offers for everyday use.
   the appliance really reconnected. The daemon log (in *Download diagnostics*) names the server an appliance asked for
   when rusthinq refused or relayed its connection.
 - If Home Assistant was killed, a daemon it left running is stopped on the next start.
+- An *LG bridge* that keeps failing with `early eof` while the appliance is paired: the appliance was set up again in
+  the LG ThinQ app, which voids the pairing rusthinq holds. Press *Unpair from LG*, then *Pair with LG*.
 - *Download diagnostics* on the integration or on an appliance gives what to attach to an issue: rusthinq's own
   diagnostics, the devices as rusthinq lists them, the daemon's last log lines, and per appliance its descriptor and
   current values. Credentials are left out.
