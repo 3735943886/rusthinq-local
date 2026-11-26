@@ -44,6 +44,16 @@ def no_frontend_build(monkeypatch):
     monkeypatch.setattr(frontend, "async_setup", setup)
 
 
+@pytest.fixture
+async def hass(hass):
+    """The test harness's `hass`, settled before it stops. Setting up the integration, or only opening its config
+    flow, sets up `http`, which starts its server and saves its config in a task of its own. On a slow runner that
+    task can end after the stop's final write, and the delayed save it schedules then is reported as a lingering
+    timer."""
+    yield hass
+    await hass.async_block_till_done()
+
+
 class StubDaemon:
     """Stands in for `EmbeddedDaemon`: the entry talks to the fake instead of a daemon of its own."""
 
