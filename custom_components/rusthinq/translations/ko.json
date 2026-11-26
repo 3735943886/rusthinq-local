@@ -195,6 +195,18 @@
       },
       "tank_full": {
         "name": "물통 가득 참"
+      },
+      "status_local_connection": {
+        "name": "로컬 연결"
+      },
+      "status_lg_bridge": {
+        "name": "LG 브리지"
+      },
+      "status_driver": {
+        "name": "드라이버"
+      },
+      "status_lg_account": {
+        "name": "LG 계정"
       }
     },
     "button": {
@@ -209,6 +221,12 @@
       },
       "resume": {
         "name": "재개"
+      },
+      "status_pair": {
+        "name": "LG에 등록"
+      },
+      "status_unpair": {
+        "name": "LG 등록 해제"
       }
     },
     "number": {
@@ -465,6 +483,9 @@
       },
       "pm10": {
         "name": "PM10"
+      },
+      "status_firmware": {
+        "name": "펌웨어"
       }
     },
     "switch": {
@@ -488,6 +509,9 @@
       },
       "air_purify": {
         "name": "공기청정"
+      },
+      "status_lg_bridge": {
+        "name": "LG 브리지"
       }
     },
     "humidifier": {

@@ -195,6 +195,18 @@
       },
       "tank_full": {
         "name": "Tank full"
+      },
+      "status_local_connection": {
+        "name": "Local connection"
+      },
+      "status_lg_bridge": {
+        "name": "LG bridge"
+      },
+      "status_driver": {
+        "name": "Driver"
+      },
+      "status_lg_account": {
+        "name": "LG account"
       }
     },
     "button": {
@@ -209,6 +221,12 @@
       },
       "resume": {
         "name": "Resume"
+      },
+      "status_pair": {
+        "name": "Pair with LG"
+      },
+      "status_unpair": {
+        "name": "Unpair from LG"
       }
     },
     "number": {
@@ -465,6 +483,9 @@
       },
       "pm10": {
         "name": "Pm10"
+      },
+      "status_firmware": {
+        "name": "Firmware"
       }
     },
     "switch": {
@@ -488,6 +509,9 @@
       },
       "air_purify": {
         "name": "Air purify"
+      },
+      "status_lg_bridge": {
+        "name": "LG bridge"
       }
     },
     "humidifier": {
