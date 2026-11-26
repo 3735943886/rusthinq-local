@@ -49,7 +49,8 @@ NEW_TREE = {"VERSION": f"{NEW} 2026-11-01\n", "drivers/A.rhai": "// a", "drivers
 
 
 def tree(directory: Path) -> dict[str, str]:
-    return {str(p.relative_to(directory)): p.read_text() for p in sorted(directory.rglob("*")) if p.is_file()}
+    return {str(p.relative_to(directory)): p.read_text() for p in sorted(directory.rglob("*"))
+            if p.is_file() and p.name != scripts.RELEASE_FILES}
 
 
 def test_the_first_install_moves_the_tree_in(tmp_path):
@@ -69,6 +70,38 @@ def test_an_update_changes_files_inside_the_watched_directory(tmp_path):
     assert (directory / "drivers/A.rhai").stat().st_ino == unchanged
     assert not (directory / "modules/gone").exists()
     assert scripts.installed_commit(tmp_path) == NEW
+
+
+def test_files_a_user_added_survive_an_update(tmp_path):
+    """A driver override at the top of scripts/ (rusthinq picks it first) or copied into drivers/ is the user's."""
+    scripts.install(tmp_path, tarball(OLD_TREE))
+    directory = tmp_path / "scripts"
+    (directory / "H05.rhai").write_text("// my H05")
+    (directory / "drivers/X.rhai").write_text("// my X")
+    scripts.install(tmp_path, tarball(NEW_TREE))
+    assert tree(directory) == {**NEW_TREE, "H05.rhai": "// my H05", "drivers/X.rhai": "// my X"}
+    assert not (directory / "modules/gone").exists()  # the previous release's own file still goes
+
+
+def test_the_release_files_are_recorded(tmp_path):
+    scripts.install(tmp_path, tarball(OLD_TREE))
+    recorded = (tmp_path / "scripts" / scripts.RELEASE_FILES).read_text().splitlines()
+    assert recorded == sorted(OLD_TREE)
+    scripts.install(tmp_path, tarball(NEW_TREE))
+    assert (tmp_path / "scripts" / scripts.RELEASE_FILES).read_text().splitlines() == sorted(NEW_TREE)
+
+
+def test_an_installation_without_a_record_deletes_nothing_on_its_first_update(tmp_path):
+    """Installed before the record existed, a file there may be the release's or the user's: keep both, once."""
+    scripts.install(tmp_path, tarball(OLD_TREE))
+    directory = tmp_path / "scripts"
+    (directory / scripts.RELEASE_FILES).unlink()
+    (directory / "drivers/X.rhai").write_text("// my X")
+    scripts.install(tmp_path, tarball(NEW_TREE))
+    assert tree(directory) == {**NEW_TREE, "modules/gone/x.rhai": "// x", "drivers/X.rhai": "// my X"}
+    scripts.install(tmp_path, tarball(OLD_TREE))  # from here on the record knows the release's files
+    assert not (directory / "drivers/C.rhai").exists()
+    assert (directory / "drivers/X.rhai").read_text() == "// my X"
 
 
 def test_a_download_without_drivers_changes_nothing(tmp_path):
