@@ -156,7 +156,7 @@
         },
         "name": "Notification"
       },
-      "error_event": {
+      "error": {
         "state_attributes": {
           "event_type": {
             "state": {
@@ -173,9 +173,7 @@
               "unknown_error": "Product requires attention"
             }
           }
-        }
-      },
-      "error": {
+        },
         "name": "Error"
       }
     },

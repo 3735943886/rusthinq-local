@@ -156,7 +156,7 @@
         },
         "name": "알림"
       },
-      "error_event": {
+      "error": {
         "state_attributes": {
           "event_type": {
             "state": {
@@ -173,9 +173,7 @@
               "unknown_error": "제품에 주의가 필요합니다"
             }
           }
-        }
-      },
-      "error": {
+        },
         "name": "오류"
       }
     },
