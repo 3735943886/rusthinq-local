@@ -171,8 +171,11 @@ and the integration covers what the dashboard offers for everyday use.
   the appliance really reconnected. The daemon log (in *Download diagnostics*) names the server an appliance asked for
   when rusthinq refused or relayed its connection.
 - If Home Assistant was killed, a daemon it left running is stopped on the next start.
-- An *LG bridge* that keeps failing with `early eof` while the appliance is paired: the appliance was set up again in
-  the LG ThinQ app, which voids the pairing rusthinq holds. Press *Unpair from LG*, then *Pair with LG*.
+- An *LG bridge* that keeps failing with `early eof` while the appliance is paired: in one report
+  ([#17](https://github.com/3735943886/rusthinq-local/issues/17)) this followed setting the appliance up again in the
+  LG ThinQ app, and *Unpair from LG* followed by *Pair with LG* brought the bridge back. Unpair removes the appliance
+  from the LG account, so it is registered anew: in that report it came back under its model name instead of its name
+  in the app.
 - *Download diagnostics* on the integration or on an appliance gives what to attach to an issue: rusthinq's own
   diagnostics, the devices as rusthinq lists them, the daemon's last log lines, and per appliance its descriptor and
   current values. Credentials are left out.
