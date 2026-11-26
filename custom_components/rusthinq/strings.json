@@ -153,9 +153,10 @@
               "water_is_full": "Water is full"
             }
           }
-        }
+        },
+        "name": "Notification"
       },
-      "error_event": {
+      "error": {
         "state_attributes": {
           "event_type": {
             "state": {
@@ -170,6 +171,350 @@
               "door_open_error": "Door open",
               "need_water_replenishment": "Fill water",
               "unknown_error": "Product requires attention"
+            }
+          }
+        },
+        "name": "Error"
+      }
+    },
+    "binary_sensor": {
+      "power": {
+        "name": "Power"
+      },
+      "remote_start": {
+        "name": "Remote start"
+      },
+      "child_lock": {
+        "name": "Child lock"
+      },
+      "error": {
+        "name": "Error"
+      },
+      "smart_diagnosis": {
+        "name": "Smart diagnosis"
+      },
+      "tank_full": {
+        "name": "Tank full"
+      }
+    },
+    "button": {
+      "power_off": {
+        "name": "Power off"
+      },
+      "start": {
+        "name": "Start"
+      },
+      "pause": {
+        "name": "Pause"
+      },
+      "resume": {
+        "name": "Resume"
+      }
+    },
+    "number": {
+      "reserve_hours": {
+        "name": "Reserve hours"
+      },
+      "off_timer": {
+        "name": "Off timer"
+      },
+      "sleep_timer": {
+        "name": "Sleep timer"
+      }
+    },
+    "select": {
+      "course_select": {
+        "name": "Course select",
+        "state": {
+          "none": "None",
+          "styling_standard": "Styling standard",
+          "styling_quick": "Styling quick",
+          "styling_intensive": "Styling intensive",
+          "wool_knit": "Wool/knit",
+          "suit_coat": "Suit/coat",
+          "functionality": "Functional wear",
+          "downloaded_course": "Downloaded course",
+          "sterilize_standard": "Sterilize standard",
+          "bedding_sterilize": "Bedding sterilize",
+          "baby_clothing_sanitary": "Baby clothing sanitary",
+          "doll_sanitary": "Doll sanitary",
+          "auto_dry": "Auto dry",
+          "wool_delicate_dry": "Wool/delicate dry",
+          "timed_dry_30": "Timed dry 30 min",
+          "timed_dry_60": "Timed dry 60 min",
+          "timed_dry_90": "Timed dry 90 min",
+          "timed_dry_120": "Timed dry 120 min",
+          "uniform_management": "Uniform care",
+          "padding_care": "Padding care",
+          "fine_dust": "Fine dust",
+          "virus": "Virus",
+          "jeans_care": "Jeans care",
+          "fur_leather_care": "Fur/leather care",
+          "suit_uniform_sterilize": "Suit/uniform sterilize",
+          "silent": "Silent",
+          "fur_leather": "Fur/leather"
+        }
+      },
+      "smart_course_select": {
+        "name": "Smart course select",
+        "state": {
+          "none": "None",
+          "panel_course": "Panel course",
+          "suits_uniforms": "Suits/uniforms",
+          "scarves": "Scarves",
+          "pants": "Pants",
+          "silent": "Silent",
+          "coat_warmer": "Coat warmer",
+          "static_removal": "Static removal",
+          "stored_items": "Stored items",
+          "blanket_warmer": "Blanket warmer",
+          "dress_shirts": "Dress shirts",
+          "snow_raing_drying": "Snow/rain drying",
+          "fur_leather": "Fur/leather",
+          "jeans_management": "Jeans care",
+          "baby_clothing_sanitary": "Baby clothing sanitary",
+          "doll_sanitary": "Doll sanitary",
+          "wool_delicate_dry": "Wool/delicate dry",
+          "rainy_days": "Rainy days",
+          "uniform": "Uniform",
+          "padding_management": "Padding care",
+          "thin_padding_management": "Thin padding care",
+          "thick_padding_management": "Thick padding care",
+          "silk_care": "Silk care",
+          "athleisure_refresh": "Athleisure refresh",
+          "athleisure_dry": "Athleisure dry",
+          "swimsuit_dry": "Swimsuit dry",
+          "golf_wear_care": "Golf wear care",
+          "golf_wear_dry": "Golf wear dry"
+        }
+      },
+      "fan": {
+        "name": "Fan",
+        "state": {
+          "auto": "Auto",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "turbo": "Turbo"
+        }
+      },
+      "auto_dry": {
+        "name": "Auto dry",
+        "state": {
+          "off": "Off",
+          "10min": "10 min",
+          "30min": "30 min",
+          "60min": "60 min",
+          "smart": "Smart"
+        }
+      },
+      "display": {
+        "name": "Display",
+        "state": {
+          "off": "Off"
+        }
+      },
+      "wind_mode": {
+        "name": "Wind mode",
+        "state": {
+          "off": "Off",
+          "manner": "Manner",
+          "long_power": "Long power",
+          "study": "Study",
+          "auto_temp": "Auto temperature"
+        }
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "power_off": "Power off",
+          "standby": "Standby",
+          "running": "Running",
+          "pause": "Paused",
+          "complete": "Complete",
+          "error": "Error",
+          "smart_diagnosis": "Smart diagnosis",
+          "storing": "Storing",
+          "reserved": "Reserved",
+          "power_save_running": "Power saving",
+          "steam_preparing": "Preparing steam",
+          "refreshing": "Refreshing",
+          "drying": "Drying",
+          "sterilizing": "Sterilizing"
+        }
+      },
+      "course": {
+        "name": "Course",
+        "state": {
+          "none": "None",
+          "styling_standard": "Styling standard",
+          "styling_quick": "Styling quick",
+          "styling_intensive": "Styling intensive",
+          "wool_knit": "Wool/knit",
+          "suit_coat": "Suit/coat",
+          "functionality": "Functional wear",
+          "downloaded_course": "Downloaded course",
+          "sterilize_standard": "Sterilize standard",
+          "bedding_sterilize": "Bedding sterilize",
+          "baby_clothing_sanitary": "Baby clothing sanitary",
+          "doll_sanitary": "Doll sanitary",
+          "auto_dry": "Auto dry",
+          "wool_delicate_dry": "Wool/delicate dry",
+          "timed_dry_30": "Timed dry 30 min",
+          "timed_dry_60": "Timed dry 60 min",
+          "timed_dry_90": "Timed dry 90 min",
+          "timed_dry_120": "Timed dry 120 min",
+          "uniform_management": "Uniform care",
+          "padding_care": "Padding care",
+          "fine_dust": "Fine dust",
+          "virus": "Virus",
+          "jeans_care": "Jeans care",
+          "fur_leather_care": "Fur/leather care",
+          "suit_uniform_sterilize": "Suit/uniform sterilize",
+          "silent": "Silent",
+          "fur_leather": "Fur/leather"
+        }
+      },
+      "smart_course": {
+        "name": "Smart course",
+        "state": {
+          "none": "None",
+          "panel_course": "Panel course",
+          "suits_uniforms": "Suits/uniforms",
+          "scarves": "Scarves",
+          "pants": "Pants",
+          "silent": "Silent",
+          "coat_warmer": "Coat warmer",
+          "static_removal": "Static removal",
+          "stored_items": "Stored items",
+          "blanket_warmer": "Blanket warmer",
+          "dress_shirts": "Dress shirts",
+          "snow_raing_drying": "Snow/rain drying",
+          "fur_leather": "Fur/leather",
+          "jeans_management": "Jeans care",
+          "baby_clothing_sanitary": "Baby clothing sanitary",
+          "doll_sanitary": "Doll sanitary",
+          "wool_delicate_dry": "Wool/delicate dry",
+          "rainy_days": "Rainy days",
+          "uniform": "Uniform",
+          "padding_management": "Padding care",
+          "thin_padding_management": "Thin padding care",
+          "thick_padding_management": "Thick padding care",
+          "silk_care": "Silk care",
+          "athleisure_refresh": "Athleisure refresh",
+          "athleisure_dry": "Athleisure dry",
+          "swimsuit_dry": "Swimsuit dry",
+          "golf_wear_care": "Golf wear care",
+          "golf_wear_dry": "Golf wear dry"
+        }
+      },
+      "remaining_time": {
+        "name": "Remaining time"
+      },
+      "initial_time": {
+        "name": "Initial time"
+      },
+      "reserve_time": {
+        "name": "Reserve time"
+      },
+      "error_message": {
+        "name": "Error message"
+      },
+      "energy": {
+        "name": "Energy"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "tank_state": {
+        "name": "Tank state",
+        "state": {
+          "not_full": "Not full",
+          "full_stopped": "Full, stopped",
+          "full_fan_mode": "Full, fan only"
+        }
+      },
+      "error": {
+        "name": "Error"
+      },
+      "auto_dry_remaining": {
+        "name": "Auto dry remaining"
+      },
+      "filter_life": {
+        "name": "Filter life"
+      },
+      "filter_remaining": {
+        "name": "Filter remaining"
+      },
+      "filter_used": {
+        "name": "Filter used"
+      },
+      "power_draw": {
+        "name": "Power draw"
+      },
+      "pm1": {
+        "name": "Pm1"
+      },
+      "pm2_5": {
+        "name": "Pm2.5"
+      },
+      "pm10": {
+        "name": "Pm10"
+      }
+    },
+    "switch": {
+      "store": {
+        "name": "Store"
+      },
+      "sterilize": {
+        "name": "Sterilize"
+      },
+      "uvnano": {
+        "name": "Uvnano"
+      },
+      "bucket_light": {
+        "name": "Bucket light"
+      },
+      "comfort_saving": {
+        "name": "Comfort saving"
+      },
+      "energy_save": {
+        "name": "Energy save"
+      },
+      "air_purify": {
+        "name": "Air purify"
+      }
+    },
+    "humidifier": {
+      "humidifier": {
+        "state_attributes": {
+          "mode": {
+            "state": {
+              "smart_plus": "Smart+",
+              "silent": "Silent",
+              "intensive": "Intensive",
+              "quick": "Quick"
+            }
+          }
+        }
+      }
+    },
+    "climate": {
+      "climate": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "very_low": "Very low",
+              "low": "Low",
+              "medium": "Medium",
+              "high": "High",
+              "power": "Power"
             }
           }
         }
