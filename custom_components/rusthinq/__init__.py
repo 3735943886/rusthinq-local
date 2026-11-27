@@ -124,8 +124,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> 
     if entry.data.get(CONF_MODE) != MODE_EMBEDDED:
         raise ConfigEntryError(
             "Connecting to a rusthinq that runs elsewhere is no longer supported: delete this entry and use that "
-            "rusthinq's external MQTT with ildevice-homeassistant, or move it in with \"Move an existing rusthinq "
-            "into Home Assistant\""
+            "rusthinq's external MQTT with ildevice-homeassistant, or move it in with \"Restore from a backup\""
         )
     prefix = entry.data[CONF_PREFIX]
     daemon = EmbeddedDaemon(hass, ports=daemon_ports(entry.data), prefix=prefix, settings=entry.data.get(CONF_SETTINGS))

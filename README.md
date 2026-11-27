@@ -13,15 +13,15 @@ instead of LG's cloud, and their drivers' output becomes Home Assistant devices 
 - LG appliances must be able to reach this Home Assistant host on TCP 443 and 8883 (or alternative ports via router
   DNAT; see [Ports](#ports)).
 - For new installations, see [Connecting appliances](#connecting-appliances). Appliances already provisioned for an
-  existing rusthinq can keep their CA and device setup when you [move the installation](#moving-an-existing-installation).
+  existing rusthinq can keep their CA and device setup when you [restore its backup](#restoring-from-a-backup).
 
 ## Installation
 
 1. In Marketplace, find **rusthinq** under Integrations and download it.
 2. Settings → Devices & services → Add integration → **rusthinq**, and choose:
-   - **Run rusthinq in Home Assistant** for a new installation, or
-   - **Move an existing rusthinq into Home Assistant** to keep an installation you already run
-     (see [Moving an existing installation](#moving-an-existing-installation)).
+   - **Set up a new rusthinq** for a first installation, or
+   - **Restore from a backup** to keep an installation you already run elsewhere, or one whose backup you downloaded
+     from this integration (see [Restoring from a backup](#restoring-from-a-backup)).
 
 Home Assistant installs the `rusthinq` package from PyPI (the daemon binaries) with the integration. On the first start
 it creates a CA and downloads the drivers: the [rusthinq-scripts](https://github.com/3735943886/rusthinq-scripts)
@@ -104,22 +104,25 @@ translate them to rusthinq's ports; a rule on rusthinq's own port (such as 8885)
    device page in Home Assistant, press **Pair with LG**. This starts the local LG cloud bridge, keeping the official
    mobile app operational alongside Home Assistant.
 
-## Moving an existing installation
+## Restoring from a backup
 
-Moving keeps the CA the appliances trust, so none needs provisioning again. Add the integration with **Move an
-existing rusthinq into Home Assistant** and take the old installation's backup one of two ways:
+Restoring keeps the CA the appliances trust, so none needs provisioning again. Use it to move a rusthinq you run
+elsewhere into Home Assistant, or to set this integration up again from a backup it downloaded. Add the integration
+with **Restore from a backup** and take the backup one of two ways:
 
-- **Copy it from the running rusthinq** (0.2.0 or later): give its management API address, and its user and password
+- **Copy it from a running rusthinq** (0.2.0 or later): give its management API address, and its user and password
   if it has them. rusthinq hands the backup out only behind credentials or on a loopback bind, since it holds the CA
   key and LG tokens.
-- **Upload a backup file**: the dashboard's System → Download backup, or `sudo thinqctl backup`. Without either, an
+- **Upload a backup file**: one this integration downloaded (**Configure** → **Download a backup**), the dashboard's
+  System → Download backup, or `sudo thinqctl backup`. Without either, an
   archive of `config.toml` and the files it names, made in its directory, works too:
   `tar czf rusthinq-export.tar.gz config.toml ca.key ca.cert devices.json account.json account.json.pairings`
 
 The next step shows what the backup holds (host name, devices, LG account, the rusthinq version that wrote it) and
-asks for this host's ports, filled in with the old installation's. Then:
+asks for this host's ports, filled in with the backup's. Then:
 
-1. Stop rusthinq on the old host and keep it stopped: two daemons would answer the same appliances and LG account.
+1. If the backup comes from another host, stop rusthinq there and keep it stopped: two daemons would answer the same
+   appliances and LG account.
    A backup copied from a running rusthinq is installed only once that rusthinq no longer answers.
 2. Submit the ports, changing those this host cannot open (the form says which).
 3. Point the appliances' route (DNS or redirect) at this host.
