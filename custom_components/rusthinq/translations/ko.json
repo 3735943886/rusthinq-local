@@ -202,9 +202,6 @@
       "status_lg_bridge": {
         "name": "LG 브리지"
       },
-      "status_driver": {
-        "name": "드라이버"
-      },
       "status_lg_account": {
         "name": "LG 계정"
       }
@@ -486,6 +483,15 @@
       },
       "status_firmware": {
         "name": "펌웨어"
+      },
+      "status_driver": {
+        "name": "드라이버",
+        "state": {
+          "loaded": "로드됨",
+          "none": "드라이버 없음",
+          "faulted": "오류",
+          "offline": "기기 오프라인"
+        }
       }
     },
     "switch": {

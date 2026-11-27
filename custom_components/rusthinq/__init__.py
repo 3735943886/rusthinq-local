@@ -105,11 +105,22 @@ RETIRED_ENTITIES = (
 )
 
 
+RETIRED_DEVICE_ENTITIES = (
+    # Each device's "Driver" problem sensor of 0.1.6rc5 and earlier: it could not tell a missing driver from a failed
+    # one. It is now an enum sensor with the same unique id (`status.Driver`).
+    ("binary_sensor", "rusthinq-driver"),
+)
+
+
 def _remove_retired_entities(hass: HomeAssistant, entry: RusthinqConfigEntry) -> None:
     registry = er.async_get(hass)
     for platform, suffix in RETIRED_ENTITIES:
         if entity_id := registry.async_get_entity_id(platform, DOMAIN, f"{entry.entry_id}-{suffix}"):
             registry.async_remove(entity_id)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if any(entity.domain == platform and entity.unique_id.endswith(f"-{suffix}")
+               for platform, suffix in RETIRED_DEVICE_ENTITIES):
+            registry.async_remove(entity.entity_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: RusthinqConfigEntry) -> bool:

@@ -202,9 +202,6 @@
       "status_lg_bridge": {
         "name": "LG bridge"
       },
-      "status_driver": {
-        "name": "Driver"
-      },
       "status_lg_account": {
         "name": "LG account"
       }
@@ -486,6 +483,15 @@
       },
       "status_firmware": {
         "name": "Firmware"
+      },
+      "status_driver": {
+        "name": "Driver",
+        "state": {
+          "loaded": "Loaded",
+          "none": "No driver",
+          "faulted": "Failed",
+          "offline": "Appliance offline"
+        }
       }
     },
     "switch": {
