@@ -27,7 +27,7 @@ async def eventually(hass, check, timeout: float = 5) -> None:
 
 def entity_id(hass, device: str, key: str) -> str | None:
     return er.async_get(hass).async_get_entity_id(
-        "sensor" if key == "firmware" else "binary_sensor", DOMAIN, f"{device}-rusthinq-{key}"
+        "sensor" if key in ("firmware", "driver") else "binary_sensor", DOMAIN, f"{device}-rusthinq-{key}"
     )
 
 
@@ -53,8 +53,9 @@ async def test_each_device_shows_its_connection_bridge_driver_and_firmware(hass,
     assert bridge.state == STATE_ON
     assert {k: bridge.attributes[k] for k in ("enabled", "paired", "pending", "error")} == {
         "enabled": True, "paired": True, "pending": False, "error": None}
-    assert state(hass, AC, "driver").state == STATE_OFF
+    assert state(hass, AC, "driver").state == "loaded"
     assert state(hass, AC, "driver").attributes["file"] == "drivers/CST_570004_WW.rhai"
+    assert state(hass, AC, "driver").attributes["model"] == "CST_570004_WW"
     assert state(hass, AC, "firmware").state == "570004"
 
     # all on the device the IL entities are on, and diagnostic
@@ -84,14 +85,39 @@ async def test_a_connection_event_rereads_the_status(hass, air_conditioner):
     assert state(hass, AC, "bridge").attributes["error"] == "offline"
 
 
-async def test_a_device_without_a_driver_gets_a_device_and_a_problem(hass, rusthinq):
-    rusthinq.add_device("washer-1", [], mapped=False, name="세탁기", modelName="F24VDD", bridgeEnabled=False,
-                        bridged=False)
+async def test_a_device_without_a_driver_gets_a_device_and_says_so(hass, rusthinq):
+    rusthinq.add_device("washer-1", [], mapped=False, name="세탁기", model="F_V8_Y___W.B_2QEUK", modelName="F24VDD",
+                        bridgeEnabled=False, bridged=False)
     await setup(hass)
     await eventually(hass, lambda: state(hass, "washer-1", "driver"))
-    assert state(hass, "washer-1", "driver").state == STATE_ON
+    assert state(hass, "washer-1", "driver").state == "none"
+    # the name its driver file needs, which the device's model does not show
+    assert {k: state(hass, "washer-1", "driver").attributes[k] for k in ("model", "file")} == {
+        "model": "F_V8_Y___W.B_2QEUK", "file": None}
     device = dr.async_get(hass).async_get(er.async_get(hass).async_get(entity_id(hass, "washer-1", "driver")).device_id)
     assert (device.name, device.model) == ("세탁기", "F24VDD")
+
+
+async def test_the_driver_state_tells_a_failed_driver_and_an_offline_device_apart(hass, air_conditioner):
+    await setup(hass)
+    await eventually(hass, lambda: state(hass, AC, "driver") and state(hass, AC, "driver").state == "loaded")
+    air_conditioner.devices[AC].update(scriptFaulted=True)
+    await air_conditioner.send({"type": "scriptStopped", "context": air_conditioner.context(AC)})
+    await eventually(hass, lambda: state(hass, AC, "driver").state == "faulted")
+    air_conditioner.devices[AC].update(online=False, mapped=False, scriptFaulted=False, driver=None)
+    await air_conditioner.send({"type": "stateChanged", "detail": f"Down(SessionId {{ device: \"{AC}\" }}, Eof)"})
+    await eventually(hass, lambda: state(hass, AC, "driver").state == "offline")
+
+
+async def test_the_old_driver_problem_sensor_is_removed(hass, air_conditioner):
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create("binary_sensor", DOMAIN, f"{AC}-rusthinq-driver", config_entry=entry)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get(old.entity_id) is None
+    await eventually(hass, lambda: state(hass, AC, "driver") and state(hass, AC, "driver").state == "loaded")
 
 
 async def test_the_status_is_unavailable_while_the_daemon_is_unreachable(hass, air_conditioner):

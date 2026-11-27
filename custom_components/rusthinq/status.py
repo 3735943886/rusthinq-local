@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.components.button import ButtonEntity
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import callback
@@ -100,8 +100,8 @@ class DeviceStatus:
             for device in self.client.devices:
                 if device not in self._known:
                     self._known.add(device)
-                    self._adders["binary_sensor"]([LocalConnection(self, device), Driver(self, device)])
-                    self._adders["sensor"]([Firmware(self, device)])
+                    self._adders["binary_sensor"]([LocalConnection(self, device)])
+                    self._adders["sensor"]([Driver(self, device), Firmware(self, device)])
                 if bridge and device not in self._bridge_known:
                     self._bridge_known.add(device)
                     self._adders["binary_sensor"]([Bridge(self, device)])
@@ -179,22 +179,34 @@ class Bridge(StatusEntity, BinarySensorEntity):
                 "pending": bool(info.get("bridgePending")), "error": info.get("bridgeError")}
 
 
-class Driver(StatusEntity, BinarySensorEntity):
-    """A problem when the driver failed, or when the device is online without one."""
+class Driver(StatusEntity, SensorEntity):
+    """The device's driver: loaded, failed, none (online without one: no file for its model, or it did not compile),
+    or offline (rusthinq attaches a driver only while the device is connected). A binary problem sensor until 0.1.6,
+    see `RETIRED_ENTITIES`."""
 
     key = "driver"
     _attr_translation_key = "status_driver"
-    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_device_class = SensorDeviceClass.ENUM
+    def __init__(self, status: DeviceStatus, device: str) -> None:
+        super().__init__(status, device)
+        self._attr_options = ["loaded", "none", "faulted", "offline"]
 
     @property
-    def is_on(self) -> bool:
+    def native_value(self) -> str:
         info = self.info
-        return bool(info.get("scriptFaulted")) or (bool(info.get("online")) and not info.get("mapped"))
+        if info.get("scriptFaulted"):
+            return "faulted"
+        if info.get("mapped"):
+            return "loaded"
+        return "none" if info.get("online") else "offline"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
+        """`model` is the name rusthinq looks the driver up by (`<model>.rhai`), which the device's model (its
+        `modelName`) may not show; `file` is the driver loaded, None without one."""
         driver = self.info.get("driver")
-        return {"file": driver.get("file") if isinstance(driver, dict) else None}
+        return {"model": self.info.get("model") or None,
+                "file": driver.get("file") if isinstance(driver, dict) else None}
 
 
 class Firmware(StatusEntity, SensorEntity):
