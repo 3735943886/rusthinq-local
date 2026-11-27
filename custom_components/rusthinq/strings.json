@@ -4,12 +4,12 @@
       "user": {
         "title": "rusthinq",
         "menu_options": {
-          "embedded": "Run rusthinq in Home Assistant",
-          "migrate": "Move an existing rusthinq into Home Assistant"
+          "embedded": "Set up a new rusthinq",
+          "migrate": "Restore from a backup"
         }
       },
       "embedded": {
-        "title": "Run rusthinq in Home Assistant",
+        "title": "Set up a new rusthinq",
         "description": "Home Assistant downloads and runs the rusthinq daemon, which LG ThinQ appliances connect to on this host. Appliances open HTTPS on port 443, and appliances already registered with LG open MQTT on 8883. If a port here differs, redirect 443 or 8883 to it.",
         "data": {
           "https_port": "HTTPS port",
@@ -21,15 +21,15 @@
         }
       },
       "migrate": {
-        "title": "Move an existing rusthinq into Home Assistant",
-        "description": "Keeps the CA your appliances trust, their device records, the LG account and the settings appliances notice, so nothing needs provisioning again. Where should the backup come from?",
+        "title": "Restore from a backup",
+        "description": "Restores a backup of rusthinq, from an installation elsewhere or one this integration downloaded. It keeps the CA your appliances trust, their device records, the LG account and the settings appliances notice, so nothing needs provisioning again. Where should the backup come from?",
         "menu_options": {
-          "migrate_fetch": "Copy it from the running rusthinq",
+          "migrate_fetch": "Copy it from a running rusthinq",
           "migrate_upload": "Upload a backup file"
         }
       },
       "migrate_fetch": {
-        "title": "Copy from the running rusthinq",
+        "title": "Copy from a running rusthinq",
         "description": "Home Assistant downloads the backup from the old rusthinq's management API (rusthinq 0.2.0 or later). rusthinq hands it out only when its management API has a user and password or listens on loopback only, since it holds the CA key and LG tokens.",
         "data": {
           "url": "URL",
@@ -44,7 +44,7 @@
       },
       "migrate_upload": {
         "title": "Upload a backup",
-        "description": "Take a backup on the old host with the dashboard (System → Download backup) or `sudo thinqctl backup`, and upload it here.\n\nWithout either, archive config.toml with the files it names, in its directory, for example:\n`tar czf rusthinq-export.tar.gz config.toml ca.key ca.cert devices.json account.json account.json.pairings`",
+        "description": "Upload a backup downloaded from this integration (Configure → Download a backup), or take one on the old host with the dashboard (System → Download backup) or `sudo thinqctl backup`.\n\nWithout either, archive config.toml with the files it names, in its directory, for example:\n`tar czf rusthinq-export.tar.gz config.toml ca.key ca.cert devices.json account.json account.json.pairings`",
         "data": {
           "archive": "Backup"
         },
@@ -53,8 +53,8 @@
         }
       },
       "migrate_confirm": {
-        "title": "Move this rusthinq in",
-        "description": "The backup holds:\n- host name: **{hostname}**\n- devices: **{devices}**\n- LG account: **{account}**\n- written by rusthinq {rusthinq} at {created}\n\nExisting files that differ from this backup: **{conflicts}**\nOverwriting the CA may mean provisioning appliances again. Only files included in the backup are replaced; files absent from it are kept.\n\n1. **Stop rusthinq on the old host now**, and keep it stopped: both would answer the same appliances and LG account.\n2. Check the ports, filled in with the old installation's, and submit.\n3. Point the appliances' route (DNS or redirect) at this host.",
+        "title": "Restore this backup",
+        "description": "The backup holds:\n- host name: **{hostname}**\n- devices: **{devices}**\n- LG account: **{account}**\n- written by rusthinq {rusthinq} at {created}\n\nExisting files that differ from this backup: **{conflicts}**\nOverwriting the CA may mean provisioning appliances again. Only files included in the backup are replaced; files absent from it are kept.\n\n1. **If the backup comes from another host, stop rusthinq there now**, and keep it stopped: both would answer the same appliances and LG account.\n2. Check the ports, filled in with the backup's, and submit.\n3. Point the appliances' route (DNS or redirect) at this host.",
         "data": {
           "https_port": "HTTPS port",
           "mqtt_port": "MQTT port",
