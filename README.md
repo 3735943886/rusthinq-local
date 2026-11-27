@@ -28,10 +28,8 @@ it creates a CA and downloads the drivers: the [rusthinq-scripts](https://github
 release this version of the integration pins. Drivers change only with a new integration release. Everything lives in
 `/config/rusthinq/`, which Home Assistant backups include. `ca.key` and the LG account files are secrets.
 
-To try a driver of your own, or another model's driver for yours, put it at the top of the drivers directory as
-`/config/rusthinq/scripts/<model>.rhai`: rusthinq picks it before `drivers/<model>.rhai`. A driver update keeps files
-you added; it replaces only the files of the release itself, so an edit to one of those (`drivers/<model>.rhai` that
-the release ships) is lost.
+You can add drivers of your own, or take a newer one from rusthinq-scripts, without waiting for a release: see
+[Your own drivers](#your-own-drivers).
 
 To download a portable backup, open Settings → Devices & services → rusthinq → **Configure** → **Download a backup**
 and follow the link to the backup page (administrators only; `/rusthinq-backup`). The browser saves the archive
@@ -160,6 +158,36 @@ appears again. An appliance that is merely offline is never forgotten.
 
 rusthinq's own dashboard is not exposed: its management API listens on 127.0.0.1 with credentials made at each start,
 and the integration covers what the dashboard offers for everyday use.
+
+## Your own drivers
+
+Drivers are [Rhai](https://rhai.rs) scripts. As with Zigbee2MQTT's external converters or ZHA's custom quirks, the
+built-in ones come with the integration and yours sit beside them:
+
+| | Where | Who changes it |
+|---|---|---|
+| Built-in drivers | `/config/rusthinq/scripts/drivers/<model>.rhai` | The integration, to the rusthinq-scripts release it pins |
+| Built-in modules | `/config/rusthinq/scripts/modules/<name>.rhai` | The integration, as above |
+| Your drivers and modules | `/config/rusthinq/scripts/<name>.rhai` | You; the integration never touches them |
+
+A file at the top of `scripts/` is picked before the built-in file of the same name, for a driver
+(`<model>.rhai` instead of `drivers/<model>.rhai`) and for a module (`il_common.rhai` instead of
+`modules/il_common.rhai`) alike. Delete it and the built-in one is used again.
+
+- **No restart needed.** rusthinq watches `scripts/` and reloads the drivers a change affects. A file that does not
+  compile is reported and the driver already running stays.
+- **Kept across updates.** When a new integration release moves to another rusthinq-scripts release, only the
+  release's own files are replaced or deleted. An edit made to a built-in file is lost then, so put changes in a copy
+  at the top of `scripts/` instead.
+- **A newer driver from rusthinq-scripts.** Copy `drivers/<model>.rhai` from
+  [rusthinq-scripts](https://github.com/3735943886/rusthinq-scripts) to `scripts/<model>.rhai`. If it needs a newer
+  module than the installed one, copy that module to the top of `scripts/` too.
+- **A module override applies to every driver.** All drivers that import the module use your copy, built-in drivers
+  included: a newer `il_common.rhai` is used by most of them. Override a module only when its changes are compatible,
+  and remove the override once an integration release ships that version.
+
+A driver that works for your appliance is welcome as a pull request to rusthinq-scripts, so the next release ships it
+for everyone.
 
 ## Troubleshooting
 
