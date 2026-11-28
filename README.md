@@ -177,11 +177,10 @@ A file at the top of `scripts/` is picked before the built-in file of the same n
 The appliance's *Driver* entity names the file to write: its `model` attribute is the `<model>` rusthinq looks for
 (the model on the device page may be a different name), and `file` is the driver loaded, empty when there is none.
 
-- **No restart needed for a running driver.** rusthinq watches `scripts/` and reloads the drivers a change affects. A
-  file that does not compile is logged as a warning (logger `custom_components.rusthinq.daemon`) and the driver already
-  running stays.
-- **A driver for an appliance that had none** (its *Driver* entity reads *No driver*) is picked up when the appliance
-  next connects. Reloading the integration restarts rusthinq, so the appliances connect again right away.
+- **No restart needed.** rusthinq watches `scripts/` and reloads the drivers a change affects. A driver added for a
+  connected appliance that had none (its *Driver* entity reads *No driver*) attaches right away; what the appliance
+  sent before that is not replayed. A file that does not compile is logged as a warning (logger
+  `custom_components.rusthinq.daemon`) and the driver already running stays.
 - **Kept across updates.** When a new integration release moves to another rusthinq-scripts release, only the
   release's own files are replaced or deleted. An edit made to a built-in file is lost then, so put changes in a copy
   at the top of `scripts/` instead.
