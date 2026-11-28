@@ -19,5 +19,5 @@
     "ildevice-homeassistant==0.2.4",
     "rusthinq==0.2.9"
   ],
-  "version": "0.1.6rc5"
+  "version": "0.1.6rc6"
 }
