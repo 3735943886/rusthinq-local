@@ -201,6 +201,10 @@ class ManagementClient:
             context = event.get("context") or {}
             if (device := context.get("device")) and (session := Session.from_context(context)):
                 self._sessions[device] = session
+            if device and context.get("scriptGeneration") != (self.devices.get(device) or {}).get("scriptGeneration"):
+                # A script the status has not seen: a driver attached (rusthinq 0.2.9 attaches one added to `scripts/`
+                # while the device stays connected) or reloaded, with no status event of its own.
+                self._schedule_status(STATUS_SETTLE)
             try:
                 publication = json.loads(event["payload"])
             except (KeyError, TypeError, ValueError):

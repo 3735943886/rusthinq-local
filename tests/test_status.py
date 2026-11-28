@@ -109,6 +109,19 @@ async def test_the_driver_state_tells_a_failed_driver_and_an_offline_device_apar
     await eventually(hass, lambda: state(hass, AC, "driver").state == "offline")
 
 
+async def test_a_driver_attached_while_connected_shows_up_without_waiting(hass, rusthinq):
+    rusthinq.add_device("washer-1", [], mapped=False)
+    await setup(hass)
+    await eventually(hass, lambda: state(hass, "washer-1", "driver") and state(hass, "washer-1", "driver").state == "none")
+    await eventually(hass, lambda: rusthinq.device_reads)  # the read after connecting; the next is minutes away
+    await asyncio.sleep(0.1)
+    # rusthinq attaches a driver added to scripts/: its first output is the only event
+    rusthinq.devices["washer-1"].update(mapped=True, scriptGeneration="1", driver={"file": "CST_570004_WW.rhai"})
+    await rusthinq.output("washer-1", "rusthinq/washer-1/state", "{}")
+    await eventually(hass, lambda: state(hass, "washer-1", "driver").state == "loaded", timeout=2)
+    assert state(hass, "washer-1", "driver").attributes["file"] == "CST_570004_WW.rhai"
+
+
 async def test_the_old_driver_problem_sensor_is_removed(hass, air_conditioner):
     entry = MockConfigEntry(domain=DOMAIN, unique_id=MODE_EMBEDDED, data=EMBEDDED)
     entry.add_to_hass(hass)
